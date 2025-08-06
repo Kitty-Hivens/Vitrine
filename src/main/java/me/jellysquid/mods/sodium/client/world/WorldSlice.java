@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.world;
 
+import git.jbredwards.fluidlogged_api.api.util.FluidState;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.util.math.ChunkSectionPos;
 import me.jellysquid.mods.sodium.client.world.biome.BiomeColorCache;
@@ -14,7 +15,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.EnumSkyBlock;
-import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
@@ -23,6 +23,8 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraftforge.client.model.pipeline.LightUtil;
+import net.minecraftforge.fml.common.Optional;
+import org.embeddedt.embeddium.compat.fluidlogged_api.FluidloggedCompat;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -71,6 +73,9 @@ public class WorldSlice implements SodiumBlockAccess {
 
     // Local Section->BlockState table.
     private final IBlockState[][] blockStatesArrays;
+
+    // Local Section->FluidState table.
+    private final Object[][] fluidStatesArrays;
 
     // Local section copies. Read-only.
     private ClonedChunkSection[] sections;
@@ -148,6 +153,9 @@ public class WorldSlice implements SodiumBlockAccess {
         this.blockStatesArrays = new IBlockState[SECTION_TABLE_ARRAY_SIZE][];
         this.biomeCaches = new Biome[SECTION_TABLE_ARRAY_SIZE][16 * 16];
 
+        if(!FluidloggedCompat.IS_LOADED) this.fluidStatesArrays = null;
+        else this.fluidStatesArrays = new Object[SECTION_TABLE_ARRAY_SIZE][];
+
         for (int x = 0; x < SECTION_LENGTH; x++) {
             for (int y = 0; y < SECTION_LENGTH; y++) {
                 for (int z = 0; z < SECTION_LENGTH; z++) {
@@ -155,6 +163,11 @@ public class WorldSlice implements SodiumBlockAccess {
 
                     this.blockStatesArrays[i] = new IBlockState[SECTION_BLOCK_COUNT];
                     Arrays.fill(this.blockStatesArrays[i], Blocks.AIR.getDefaultState());
+
+                    if (FluidloggedCompat.IS_LOADED) {
+                        this.fluidStatesArrays[i] = new Object[SECTION_BLOCK_COUNT];
+                        Arrays.fill(this.fluidStatesArrays[i], FluidloggedCompat.getEmptyFluidState());
+                    }
                 }
             }
         }
@@ -183,32 +196,33 @@ public class WorldSlice implements SodiumBlockAccess {
 
                     this.biomeCaches[idx] = section.getBiomeData();
 
-                    this.unpackBlockData(this.blockStatesArrays[idx], section, context.getVolume());
+                    this.unpackBlockData(idx, section, context.getVolume());
                 }
             }
         }
     }
 
-    private void unpackBlockData(IBlockState[] states, ClonedChunkSection section, StructureBoundingBox box) {
+    private void unpackBlockData(int sectionIdx, ClonedChunkSection section, StructureBoundingBox box) {
         if (this.origin.equals(section.getPosition()))  {
-            this.unpackBlockDataZ(states, section);
+            this.unpackBlockDataZ(sectionIdx, section);
         } else {
-            this.unpackBlockDataR(states, section, box);
+            this.unpackBlockDataR(sectionIdx, section, box);
         }
     }
 
-    private static void copyBlocks(IBlockState[] blocks, ClonedChunkSection section, int minBlockY, int maxBlockY, int minBlockZ, int maxBlockZ, int minBlockX, int maxBlockX) {
+    private void copyBlocks(int sectionIdx, ClonedChunkSection section, int minBlockY, int maxBlockY, int minBlockZ, int maxBlockZ, int minBlockX, int maxBlockX) {
         for (int y = minBlockY; y <= maxBlockY; y++) {
             for (int z = minBlockZ; z <= maxBlockZ; z++) {
                 for (int x = minBlockX; x <= maxBlockX; x++) {
                     final int blockIdx = getLocalBlockIndex(x & 15, y & 15, z & 15);
-                    blocks[blockIdx] = section.getBlockState(x & 15, y & 15, z & 15);
+                    this.blockStatesArrays[sectionIdx][blockIdx] = section.getBlockState(x & 15, y & 15, z & 15);
+                    if (FluidloggedCompat.IS_LOADED) this.fluidStatesArrays[sectionIdx][blockIdx] = section.getFluidState(x & 15, y & 15, z & 15);
                 }
             }
         }
     }
 
-    private void unpackBlockDataR(IBlockState[] states, ClonedChunkSection section, StructureBoundingBox box) {
+    private void unpackBlockDataR(int sectionIdx, ClonedChunkSection section, StructureBoundingBox box) {
         ChunkSectionPos pos = section.getPosition();
 
         int minBlockX = Math.max(box.minX, pos.getMinX());
@@ -220,10 +234,10 @@ public class WorldSlice implements SodiumBlockAccess {
         int minBlockZ = Math.max(box.minZ, pos.getMinZ());
         int maxBlockZ = Math.min(box.maxZ, pos.getMaxZ());
 
-        copyBlocks(states, section, minBlockY, maxBlockY, minBlockZ, maxBlockZ, minBlockX, maxBlockX);
+        copyBlocks(sectionIdx, section, minBlockY, maxBlockY, minBlockZ, maxBlockZ, minBlockX, maxBlockX);
     }
 
-    private void unpackBlockDataZ(IBlockState[] states, ClonedChunkSection section) {
+    private void unpackBlockDataZ(int sectionIdx, ClonedChunkSection section) {
         // TODO: Look into a faster copy for this?
         final ChunkSectionPos pos = section.getPosition();
 
@@ -237,7 +251,7 @@ public class WorldSlice implements SodiumBlockAccess {
         final int maxBlockZ = pos.getMaxZ();
 
         // TODO: Can this be optimized?
-        copyBlocks(states, section, minBlockY, maxBlockY, minBlockZ, maxBlockZ, minBlockX, maxBlockX);
+        copyBlocks(sectionIdx, section, minBlockY, maxBlockY, minBlockZ, maxBlockZ, minBlockX, maxBlockX);
     }
 
     private static boolean blockBoxContains(StructureBoundingBox box, int x, int y, int z) {
@@ -269,8 +283,7 @@ public class WorldSlice implements SodiumBlockAccess {
         int relY = y - this.baseY;
         int relZ = z - this.baseZ;
 
-        return this.blockStatesArrays[getLocalSectionIndex(relX >> 4, relY >> 4, relZ >> 4)]
-                [getLocalBlockIndex(relX & 15, relY & 15, relZ & 15)];
+        return getBlockStateRelative(relX, relY, relZ);
     }
 
     public IBlockState getBlockStateRelative(int x, int y, int z) {
@@ -331,7 +344,8 @@ public class WorldSlice implements SodiumBlockAccess {
 
         IBlockState state = this.getBlockStateRelative(relX, relY, relZ);
 
-        if(!state.useNeighborBrightness()) {
+        if(!state.useNeighborBrightness()
+                && !(FluidloggedCompat.IS_LOADED && FluidloggedCompat.getFluidStateRelative(this, relX, relY, relZ).useNeighborBrightness())) {
             return getLightFor(type, relX, relY, relZ);
         } else {
             int west = getLightFor(type, relX - 1, relY, relZ);
@@ -405,8 +419,8 @@ public class WorldSlice implements SodiumBlockAccess {
 
     @Override
     public int getStrongPower(BlockPos pos, EnumFacing direction) {
-        IBlockState state = this.getBlockState(pos);
-        return state.getBlock().getStrongPower(state, this, pos, direction);
+        if (FluidloggedCompat.IS_LOADED) return FluidloggedCompat.getStrongPower(this, pos, direction);
+        else return this.getBlockState(pos).getStrongPower(this, pos, direction);
     }
 
     @Override
@@ -458,5 +472,32 @@ public class WorldSlice implements SodiumBlockAccess {
 
     public static int getLocalChunkIndex(int x, int z) {
         return z << TABLE_BITS | x;
+    }
+
+    @Override
+    @Optional.Method(modid = FluidloggedCompat.MODID)
+    public FluidState getFluidState(int x, int y, int z) {
+        if (!blockBoxContains(this.volume, x, y, z)) {
+            return FluidState.EMPTY;
+        }
+
+        int relX = x - this.baseX;
+        int relY = y - this.baseY;
+        int relZ = z - this.baseZ;
+
+        return getFluidStateRelative(relX, relY, relZ);
+    }
+
+    @Optional.Method(modid = FluidloggedCompat.MODID)
+    public FluidState getFluidStateRelative(int x, int y, int z) {
+        // NOTE: Not bounds checked. We assume ChunkRenderRebuildTask is the only function using this
+        return (FluidState) this.fluidStatesArrays[getLocalSectionIndex(x >> 4, y >> 4, z >> 4)]
+                [getLocalBlockIndex(x & 15, y & 15, z & 15)];
+    }
+
+    @Override
+    @Optional.Method(modid = FluidloggedCompat.MODID)
+    public World getWorld() {
+        return this.world;
     }
 }

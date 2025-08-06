@@ -18,7 +18,6 @@ import me.jellysquid.mods.sodium.client.util.color.ColorABGR;
 import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import me.jellysquid.mods.sodium.common.util.WorldUtil;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
@@ -26,18 +25,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.color.BlockColors;
 import net.minecraft.client.renderer.color.IBlockColor;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidRegistry;
-import net.minecraftforge.fluids.IFluidBlock;
 import org.embeddedt.embeddium.render.fluid.EmbeddiumFluidSpriteCache;
 import repack.joml.Vector3d;
-
-import java.util.Objects;
 
 public class FluidRenderer {
 
@@ -72,16 +66,16 @@ public class FluidRenderer {
     }
 
     private boolean isFluidOccluded(IBlockAccess world, int x, int y, int z, EnumFacing dir, Fluid fluid) {
-        BlockPos pos = this.scratchPos.setPos(x, y, z);
+        BlockPos pos = this.scratchPos.setPos(x, y, z).toImmutable();
         IBlockState blockState = world.getBlockState(pos);
         BlockPos adjPos = this.scratchPos.setPos(x + dir.getXOffset(), y + dir.getYOffset(), z + dir.getZOffset());
-        Fluid adjFluid = WorldUtil.getFluid(world.getBlockState(adjPos));
+        Fluid adjFluid = WorldUtil.getFluid(WorldUtil.getFluidFromWorld(world, adjPos));
 
         if (blockState.getMaterial().isOpaque()) {
-            return fluid == adjFluid || blockState.isSideSolid(world,pos,dir);
+            return WorldUtil.isSame(fluid, adjFluid) || blockState.isSideSolid(world,pos,dir);
             // fluidlogged or next to water, occlude sides that are solid or the same liquid
         }
-        return fluid == adjFluid;
+        return WorldUtil.isSame(fluid, adjFluid);
     }
 
     private boolean isSideExposed(IBlockAccess world, int x, int y, int z, EnumFacing dir) {
@@ -125,7 +119,8 @@ public class FluidRenderer {
 
         TextureAtlasSprite[] sprites = fluidSpriteCache.getSprites(fluid);
         // Treat any non-lava fluid as colored, fluids without color providers will just use -1 which is a fine default
-        boolean hc = fluidState.getBlock() != Blocks.LAVA && fluidState.getBlock() != Blocks.FLOWING_LAVA;
+        // Currently disabled, as certain mods allow the lava fluid to be colored
+        boolean hc = true; // boolean hc = fluidState.getBlock() != Blocks.LAVA && fluidState.getBlock() != Blocks.FLOWING_LAVA;
 
         boolean rendered = false;
 
@@ -208,7 +203,7 @@ public class FluidRenderer {
             this.calculateQuadColors(quad, world, pos, lighter, EnumFacing.UP, 1.0F, hc);
             this.flushQuad(buffers, quad, facing, false);
 
-            if (WorldUtil.method_15756(world, this.scratchPos.setPos(posX, posY + 1, posZ), fluid)) {
+            if (WorldUtil.shouldRenderSides(world, this.scratchPos.setPos(posX, posY + 1, posZ), fluid)) {
                 this.setVertex(quad, 3, 0.0f, h1, 0.0f, u1, v1);
                 this.setVertex(quad, 2, 0.0f, h2, 1.0F, u2, v2);
                 this.setVertex(quad, 1, 1.0F, h3, 1.0F, u3, v3);
@@ -363,7 +358,7 @@ public class FluidRenderer {
         int[] biomeColors = null;
 
         if (colorized) {
-            IBlockState state = world.getBlockState(pos);
+            IBlockState state = WorldUtil.getFluidFromWorld(world, pos);
             IBlockColor colorProvider = ((BlockColorsExtended)this.vanillaBlockColors).getColorProvider(state);
             boolean containsColoredQuad = false;
             if(colorProvider != null) {
@@ -441,17 +436,17 @@ public class FluidRenderer {
             int x2 = x - (i & 1);
             int z2 = z - (i >> 1 & 1);
 
-            Block block = world.getBlockState(this.scratchPos.setPos(x2, y + 1, z2)).getBlock();
-            if (WorldUtil.getFluidOfBlock(block) == fluid) {
+            IBlockState above = WorldUtil.getFluidFromWorld(world, this.scratchPos.setPos(x2, y + 1, z2));
+            if (WorldUtil.isSame(fluid, WorldUtil.getFluid(above))) {
                 return 1.0F;
             }
 
-            BlockPos pos = this.scratchPos.setPos(x2, y, z2);
+            this.scratchPos.setY(y);
 
-            IBlockState blockState = world.getBlockState(pos);
-            Fluid fluid2 = WorldUtil.getFluidOfBlock(blockState.getBlock());
+            IBlockState blockState = WorldUtil.getFluidFromWorld(world, this.scratchPos);
+            Fluid fluid2 = WorldUtil.getFluid(blockState);
 
-            if (fluid == fluid2) {
+            if (WorldUtil.isSame(fluid, fluid2)) {
                 float height = WorldUtil.getFluidHeight(fluid2, blockState.getValue(BlockLiquid.LEVEL));
 
                 if (height >= 0.8F) {

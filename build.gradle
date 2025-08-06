@@ -164,6 +164,7 @@ dependencies {
     compileOnly rfg.deobf("curse.maven:codechicken-lib-1-8-242818:2779848")
     compileOnly rfg.deobf("curse.maven:censoredasm-460609:4800875")
     compileOnly rfg.deobf("curse.maven:fermiumasm-971247:5116326")
+    compileOnly rfg.deobf("maven.modrinth:fluidlogged-api:3.0.0")
 }
 
 apply from: 'gradle/scripts/dependencies.gradle'

@@ -9,7 +9,9 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.IFluidBlock;
+import org.embeddedt.embeddium.compat.fluidlogged_api.FluidloggedCompat;
 import repack.joml.Vector3d;
 
 /**
@@ -45,7 +47,7 @@ public class WorldUtil {
             }
         }
 
-        IBlockState state = world.getBlockState(pos);
+        IBlockState state = WorldUtil.getFluidFromWorld(world, pos);
         if (state.getValue(BlockLiquid.LEVEL) >= 8) {
             if (thizz.isSideSolid(world, pos.north(), EnumFacing.NORTH)
                     || thizz.isSideSolid(world, pos.south(), EnumFacing.SOUTH)
@@ -65,14 +67,14 @@ public class WorldUtil {
     }
 
     /**
-     * Returns true if any block in a 3x3x3 cube is not the same fluid and not an opaque full cube.
-     * Equivalent to FluidState::method_15756 in modern.
+     * Returns true if any block in a 3x1x3 area is not the same fluid and not a full block.
+     * Equivalent to BlockLiquid::shouldRenderSides, or FluidState::method_15756 in modern.
      */
-    public static boolean method_15756(IBlockAccess world, BlockPos pos, Fluid fluid) {
-        for (int i = 0; i < 2; ++i) {
-            for (int j = 0; j < 2; ++j) {
-                IBlockState block = world.getBlockState(pos);
-                if (!block.isOpaqueCube() && getFluid(block) != fluid) {
+    public static boolean shouldRenderSides(IBlockAccess world, BlockPos pos, Fluid fluid) {
+        for (int i = -1; i < 2; ++i) {
+            for (int j = -1; j < 2; ++j) {
+                IBlockState block = getFluidFromWorld(world, pos.add(i, 0, j));
+                if (!block.isFullBlock() && !isSame(getFluid(block), fluid)) {
                     return true;
                 }
             }
@@ -93,8 +95,8 @@ public class WorldUtil {
      * value of zero
      */
     public static int getEffectiveFlowDecay(IBlockAccess world, BlockPos pos, IBlockState thiz) {
-        IBlockState state = world.getBlockState(pos);
-        if (state.getMaterial() != thiz.getMaterial()) {
+        IBlockState state = getFluidFromWorld(world, pos);
+        if (!isSame(getFluid(thiz), getFluid(state))) {
             return -1;
         } else {
             int decay = state.getValue(BlockLiquid.LEVEL);
@@ -110,23 +112,34 @@ public class WorldUtil {
 
     public static Fluid getFluid(IBlockState b) {
         IFluidBlock fluidBlock = toFluidBlock(b.getBlock());
-        return fluidBlock != null ? fluidBlock.getFluid() : null;
+        if (fluidBlock != null) return fluidBlock.getFluid();
+
+        Material m = b.getMaterial();
+        return m == Material.WATER ? FluidRegistry.WATER : m == Material.LAVA ? FluidRegistry.LAVA : null;
+    }
+
+    public static IBlockState getFluidFromWorld(IBlockAccess world, BlockPos pos) {
+        return FluidloggedCompat.IS_LOADED ? FluidloggedCompat.getFluidOrReal(world, pos) : world.getBlockState(pos);
+    }
+
+    public static boolean isSame(Fluid fluid, Fluid otherFluid) {
+        return FluidloggedCompat.IS_LOADED ? FluidloggedCompat.isCompatibleFluid(fluid, otherFluid) : fluid == otherFluid;
     }
 
     /**
      * Equivalent to method_15748 in 1.16.5
      */
     public static boolean isEmptyOrSame(Fluid fluid, Fluid otherFluid) {
-        return otherFluid == null || fluid == otherFluid;
+        return otherFluid == null || isSame(fluid, otherFluid);
     }
 
     /**
      * Equivalent to method_15749 in 1.16.5
      */
     public static boolean method_15749(IBlockAccess world, Fluid thiz, BlockPos pos, EnumFacing dir) {
-        IBlockState b = world.getBlockState(pos);
+        IBlockState b = getFluidFromWorld(world, pos);
         Fluid f = getFluid(b);
-        if (f == thiz) {
+        if (isSame(f, thiz)) {
             return false;
         }
         if (dir == EnumFacing.UP) {
@@ -136,17 +149,17 @@ public class WorldUtil {
     }
 
     public static IFluidBlock toFluidBlock(Block block) {
-        if(block instanceof VanillaFluidBlock) {
+        if(block instanceof IFluidBlock) {
+            return (IFluidBlock) block;
+        } else if(block instanceof VanillaFluidBlock) {
             return ((VanillaFluidBlock) block).getFakeFluidBlock();
-        } else if(block instanceof IFluidBlock) {
-            return (IFluidBlock)block;
         } else {
             return null;
         }
     }
 
+    @Deprecated // Use state-sensitive method instead.
     public static Fluid getFluidOfBlock(Block block) {
-        IFluidBlock fluidBlock = toFluidBlock(block);
-        return fluidBlock != null ? fluidBlock.getFluid() : null;
+        return getFluid(block.getDefaultState());
     }
 }

@@ -14,7 +14,6 @@ import me.jellysquid.mods.sodium.client.util.MathUtil;
 import me.jellysquid.mods.sodium.client.util.task.CancellationSource;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import me.jellysquid.mods.sodium.client.world.cloned.ChunkRenderContext;
-import me.jellysquid.mods.sodium.common.util.WorldUtil;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -35,6 +34,7 @@ import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.common.MinecraftForge;
 import org.embeddedt.embeddium.api.ChunkDataBuiltEvent;
 import org.embeddedt.embeddium.compat.ccl.CCLCompat;
+import org.embeddedt.embeddium.compat.fluidlogged_api.FluidloggedCompat;
 
 /**
  * Rebuilds all the meshes of a chunk for each given render pass with non-occluded blocks. The result is then uploaded
@@ -46,7 +46,7 @@ import org.embeddedt.embeddium.compat.ccl.CCLCompat;
 public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkRenderBuildTask<T> {
     private static final BlockRenderLayer[] LAYERS = BlockRenderLayer.values();
     private final ChunkRenderContainer<T> render;
-        
+
     private final BlockPos offset;
 
     private final ChunkRenderContext context;
@@ -124,7 +124,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
 
                                 if (CCLCompat.canHandle(renderType)) {
                                     CCLCompat.renderBlock(slice, pos, blockState, buffers.get(layer));
-                                } else if (renderType == EnumBlockRenderType.MODEL && WorldUtil.toFluidBlock(block) == null) {
+                                } else if (renderType == EnumBlockRenderType.MODEL) {
                                     IBakedModel model = cache.getBlockModels()
                                             .getModelForState(blockState);
 
@@ -134,12 +134,16 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                                         bounds.addBlock(relX, relY, relZ);
                                     }
 
-                                } else if (WorldUtil.toFluidBlock(block) != null) {
+                                } else if (renderType == EnumBlockRenderType.LIQUID) {
                                     if (cache.getFluidRenderer().render(cache.getLocalSlice(), blockState, pos, buffers.get(layer))) {
                                         bounds.addBlock(relX, relY, relZ);
                                     }
                                 }
                             }
+                        }
+
+                        if (FluidloggedCompat.IS_LOADED && FluidloggedCompat.renderFluidState(slice, relX + 16, relY + 16, relZ + 16, pos, blockState, cache, buffers)) {
+                            bounds.addBlock(relX, relY, relZ);
                         }
 
                         if (block.hasTileEntity(blockState)) {
@@ -170,7 +174,7 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
             throw fillCrashInfo(CrashReport.makeCrashReport(ex, "Encountered exception while building chunk meshes"), slice, pos);
         }
 
-        
+
         ForgeHooksClient.setRenderLayer(null);
 
         render.setRebuildForTranslucents(false);

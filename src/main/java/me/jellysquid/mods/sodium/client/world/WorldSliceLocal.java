@@ -1,13 +1,17 @@
 package me.jellysquid.mods.sodium.client.world;
 
+import git.jbredwards.fluidlogged_api.api.util.FluidState;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeColorHelper;
+import net.minecraftforge.fml.common.Optional;
+import org.embeddedt.embeddium.compat.fluidlogged_api.FluidloggedCompat;
 
 import javax.annotation.Nullable;
 
@@ -66,5 +70,17 @@ public class WorldSliceLocal implements SodiumBlockAccess {
     @Override
     public int getBlockTint(BlockPos pos, BiomeColorHelper.ColorResolver resolver) {
         return view.getBlockTint(pos, resolver);
+    }
+
+    @Override
+    @Optional.Method(modid = FluidloggedCompat.MODID)
+    public FluidState getFluidState(int x, int y, int z) {
+        return view.getFluidState(x, y, z);
+    }
+
+    @Override
+    @Optional.Method(modid = FluidloggedCompat.MODID)
+    public World getWorld() {
+        return view.getWorld();
     }
 }
