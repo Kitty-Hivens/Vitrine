@@ -112,9 +112,15 @@ repositories {
         url 'https://repo.spongepowered.org/maven'
     }
     maven {
-        url "https://cursemaven.com"
+        url 'https://cursemaven.com'
         content {
-            includeGroup "curse.maven"
+            includeGroup 'curse.maven'
+        }
+    }
+    maven {
+        url 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
         }
     }
 }
