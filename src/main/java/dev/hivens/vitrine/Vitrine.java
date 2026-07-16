@@ -1,4 +1,4 @@
-package io.themade4.relictium;
+package dev.hivens.vitrine;
 
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import net.minecraft.client.Minecraft;
@@ -6,8 +6,8 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(modid = "vintagium", useMetadata = true)
-public class Relictium {
+@Mod(modid = "vitrine", useMetadata = true)
+public class Vitrine {
 
     public static final String MODID = Tags.MOD_ID;
     public static final String MODNAME = Tags.MOD_NAME;

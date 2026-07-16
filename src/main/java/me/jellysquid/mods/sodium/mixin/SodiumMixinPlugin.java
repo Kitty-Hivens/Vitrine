@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin;
 
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.common.config.Option;
 import me.jellysquid.mods.sodium.common.config.SodiumConfig;
 
@@ -17,18 +17,18 @@ import java.util.Set;
 public class SodiumMixinPlugin implements IMixinConfigPlugin {
     private static final String MIXIN_PACKAGE_ROOT = "me.jellysquid.mods.sodium.mixin.";
 
-    private final Logger logger = LogManager.getLogger(Relictium.MODNAME);
+    private final Logger logger = LogManager.getLogger(Vitrine.MODNAME);
     private SodiumConfig config;
 
     @Override
     public void onLoad(String mixinPackage) {
         try {
-            this.config = SodiumConfig.load(new File(".").toPath().resolve("config").resolve(Relictium.MODID + "-mixins.properties").toFile());
+            this.config = SodiumConfig.load(new File(".").toPath().resolve("config").resolve(Vitrine.MODID + "-mixins.properties").toFile());
         } catch (Exception e) {
-            throw new RuntimeException("Could not load configuration file for " + Relictium.MODNAME, e);
+            throw new RuntimeException("Could not load configuration file for " + Vitrine.MODNAME, e);
         }
 
-        this.logger.info("Loaded configuration file for " + Relictium.MODNAME + ": {} options available, {} override(s) found",
+        this.logger.info("Loaded configuration file for " + Vitrine.MODNAME + ": {} options available, {} override(s) found",
                 this.config.getOptionCount(), this.config.getOptionOverrideCount());
     }
 

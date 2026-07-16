@@ -8,7 +8,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gl.compat.FogHelper;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
@@ -118,10 +118,10 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         }
 
         this.culler = new ChunkGraphCuller(world, renderDistance);
-        this.translucencySorting = Relictium.options().advanced.translucencySorting;
+        this.translucencySorting = Vitrine.options().advanced.translucencySorting;
         this.translucencyBlockRenderDistance = Math.min(9216, (renderDistance << 4) * (renderDistance << 4));
 
-        this.useBlockFaceCulling = Relictium.options().advanced.useBlockFaceCulling;
+        this.useBlockFaceCulling = Vitrine.options().advanced.useBlockFaceCulling;
     }
 
     public void update(float ticks, FrustumExtended frustum, int frame, boolean spectator) {
@@ -141,9 +141,9 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.cameraZ = (float) pos.z;
 
         this.useFogCulling = false;
-        this.alwaysDeferChunkUpdates = Relictium.options().performance.alwaysDeferChunkUpdates;
+        this.alwaysDeferChunkUpdates = Vitrine.options().performance.alwaysDeferChunkUpdates;
 
-        if (Relictium.options().advanced.useFogOcclusion) {
+        if (Vitrine.options().advanced.useFogOcclusion) {
             float dist = FogHelper.getFogCutoff() + FOG_PLANE_OFFSET;
 
             if (dist != 0.0f) {

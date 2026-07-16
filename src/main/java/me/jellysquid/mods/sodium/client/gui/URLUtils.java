@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui;
 
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import net.minecraft.util.Util;
 
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class URLUtils {
         try {
             Runtime.getRuntime().exec(getURLOpenCommand(url));
         } catch (IOException exception) {
-            Relictium.logger().error("Couldn't open url '{}'", url, exception);
+            Vitrine.logger().error("Couldn't open url '{}'", url, exception);
         }
 
     }

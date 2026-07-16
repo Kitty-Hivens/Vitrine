@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import com.llamalad7.mixinextras.sugar.Local;
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -50,7 +50,7 @@ public abstract class MixinRenderGlobal {
         EntityPlayerSP player = this.mc.player;
         BlockPos.MutableBlockPos entityBlockPos = new BlockPos.MutableBlockPos();
         // Apply entity distance scaling
-        Entity.setRenderDistanceWeight(MathHelper.clamp((double)this.mc.gameSettings.renderDistanceChunks / 8.0D, 1.0D, 2.5D) * Relictium.options().quality.entityDistanceScaling);
+        Entity.setRenderDistanceWeight(MathHelper.clamp((double)this.mc.gameSettings.renderDistanceChunks / 8.0D, 1.0D, 2.5D) * Vitrine.options().quality.entityDistanceScaling);
         for(Entity entity : loadedEntityList) {
             // Skip entities that shouldn't render in this pass
             if(!entity.shouldRenderInPass(pass)) {

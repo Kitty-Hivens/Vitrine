@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.mixin.features.render_layer.leaves;
 
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockLeaves;
 import net.minecraft.block.material.MapColor;
@@ -17,6 +17,6 @@ public class MixinLeavesBlock extends Block {
 
     @ModifyVariable(method = "setGraphicsLevel", at = @At("HEAD"), argsOnly = true, index = 1)
     private boolean getSodiumLeavesQuality(boolean fancy) {
-        return Relictium.options().quality.leavesQuality.isFancy(fancy);
+        return Vitrine.options().quality.leavesQuality.isFancy(fancy);
     }
 }

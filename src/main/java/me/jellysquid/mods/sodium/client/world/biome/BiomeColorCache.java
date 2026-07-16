@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.world.biome;
 
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.util.color.ColorARGB;
 import me.jellysquid.mods.sodium.client.util.math.ChunkSectionPos;
 import me.jellysquid.mods.sodium.client.world.WorldSlice;
@@ -30,7 +30,7 @@ public class BiomeColorCache {
     public BiomeColorCache(BiomeColorHelper.ColorResolver resolver, WorldSlice slice) {
         this.resolver = resolver;
         this.slice = slice;
-        this.radius = Relictium.options().quality.biomeBlendRadius;
+        this.radius = Vitrine.options().quality.biomeBlendRadius;
 
         ChunkSectionPos origin = this.slice.getOrigin();
 

@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.options.storage;
 
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 
 import java.io.IOException;
@@ -9,7 +9,7 @@ public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
     private final SodiumGameOptions options;
 
     public SodiumOptionsStorage() {
-        this.options = Relictium.options();
+        this.options = Vitrine.options();
     }
 
     @Override
@@ -25,6 +25,6 @@ public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
             throw new RuntimeException("Couldn't save configuration changes", e);
         }
 
-        Relictium.logger().info("Flushed changes to " + Relictium.MODNAME + " configuration");
+        Vitrine.logger().info("Flushed changes to " + Vitrine.MODNAME + " configuration");
     }
 }

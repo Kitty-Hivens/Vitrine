@@ -1,6 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.options.storage;
 
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.GameSettings;
 
@@ -20,6 +20,6 @@ public class MinecraftOptionsStorage implements OptionStorage<GameSettings> {
     public void save() {
         this.getData().saveOptions();
 
-        Relictium.logger().info("Flushed changes to Minecraft configuration");
+        Vitrine.logger().info("Flushed changes to Minecraft configuration");
     }
 }

@@ -1,34 +1,29 @@
-# Relictium
-<img src="https://raw.githubusercontent.com/TheMade4/Relictium/refs/heads/master/src/main/resources/assets/relictium/logo.png" width="256">
+# Vitrine
 
-![GitHub Stars](https://img.shields.io/github/stars/TheMade4/Relictium?style=flat-square)
-![GitHub Forks](https://img.shields.io/github/forks/TheMade4/Relictium?style=flat-square)
-![Build Status](https://img.shields.io/github/actions/workflow/status/TheMade4/Relictium/build.yml?branch=master&style=flat-square)
+Vitrine is a Minecraft 1.12.2 rendering-optimization mod for Forge. It replaces the vanilla chunk renderer to improve frame rate, and is an unofficial fork of [Relictium](https://github.com/TheMade4/Relictium) -- itself a fork of [Vintagium (Asek3)](https://github.com/Asek3/sodium-1.12), a Forge port of [CaffeineMC's Sodium](https://github.com/CaffeineMC/sodium).
 
-![CurseForge Downloads](https://img.shields.io/curseforge/dt/1181652?logo=curseforge&label=CurseForge)
-![Modrinth Downloads](https://img.shields.io/modrinth/dt/relictium?logo=modrinth&label=Modrinth)
+## Status
 
+Early fork. The baseline is functionally equivalent to Relictium 1.2.0; everything on top of it is tracked in the commit history and CHANGELOG.
 
+## Known incompatibilities
 
-Relictium is an unofficial fork of [Vintagium (by Asek3)](https://github.com/Asek3/sodium-1.12), itself an unofficial fork of [CaffeineMC's “Sodium”](https://github.com/CaffeineMC/sodium), ported to Minecraft 1.12.2 and designed to work with Forge Mod Loader. This mod significantly improves the performance of Minecraft 1.12.2 by rewriting the game's rendering engine for smoother and faster gameplay. 🚀
+Inherited from the Sodium/Relictium lineage:
 
-## 📢 Disclaimer
-Known incompatibilities:
-- Optifine (Relictium is not and will never be compatible with Optifine)
-- FarPlaneTwo
-- LittleTiles
-- Fluidlogged API (and other mods that use this API, such as Subaquatic)
-- ArchitectureCraft
+- OptiFine -- fundamentally incompatible; use one or the other.
+- Mods that also rewrite the renderer or ASM-patch the same vanilla classes: LittleTiles, FarPlaneTwo, ArchitectureCraft, Fluidlogged API (and dependents such as Subaquatic).
+- Connected-textures mods (ConnectedTexturesMod / Chisel) can mis-render terrain after an in-world resource reload (toggling a pack while a world is open). Apply resource packs at the main menu before entering a world; restart to change them.
 
-Due to limited time, feature requests are best made through pull requests. I’ll review them as soon as possible.
+## Building
 
-## 🌍 Community
-Join our growing community of mod enthusiasts and contributors:
-- [Issues](https://github.com/TheMade4/Relictium/issues) – Report bugs or request features.
-- [Pull Requests](https://github.com/TheMade4/Relictium/pulls) – Submit code improvements.
+A JDK is required; the Gradle toolchain provisions Java 8 automatically.
 
-## 📜 License
-Relictium is licensed under the LGPLv3 License. See the [LICENSE](LICENSE) file for more information.
+    ./gradlew build
 
----
-Thank you for supporting Relictium! Your contributions and feedback are invaluable in making this mod even better! 💖
+The jar is written to `build/libs/`.
+
+## License
+
+Vitrine is licensed under the LGPL-3.0, the same as its upstreams. See [LICENSE](LICENSE).
+
+Lineage and attribution: Sodium (c) CaffeineMC; Vintagium (c) Asek3; Relictium (c) TheMade4. Vitrine continues that line under the same license.

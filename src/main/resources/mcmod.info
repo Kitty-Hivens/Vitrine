@@ -1,5 +1,5 @@
 [{
-	"modid": "vintagium",
+	"modid": "vitrine",
 	"name": "${mod_name}",
 	"version": "${mod_version}",
 	"mcversion": "1.12.2",

@@ -1,7 +1,7 @@
 package me.jellysquid.mods.sodium.client;
 
 import com.google.common.collect.ImmutableList;
-import io.themade4.relictium.Tags;
+import dev.hivens.vitrine.Tags;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import zone.rong.mixinbooter.IEarlyMixinLoader;
 

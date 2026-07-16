@@ -4,7 +4,7 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import io.themade4.relictium.Relictium;
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gui.options.FormattedTextProvider;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -117,7 +117,7 @@ public class SodiumGameOptions {
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             } catch (JsonSyntaxException e) {
-                Relictium.logger().error("Could not parse config, will fallback to default settings", e);
+                Vitrine.logger().error("Could not parse config, will fallback to default settings", e);
                 config = new SodiumGameOptions();
                 resaveConfig = false;
             }
