@@ -31,6 +31,10 @@ public class MixinWeightedBakedModel {
      */
     @Overwrite
     public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing face, long random) {
+        if (this.totalWeight == 0) {
+            return Collections.emptyList();
+        }
+
     	WeightedBakedModel.WeightedModel entry = getAt(this.models, Math.abs((int) random) % this.totalWeight);
 
         if (entry != null) {
