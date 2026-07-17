@@ -74,12 +74,15 @@ public class FluidRenderer {
     private boolean isFluidOccluded(IBlockAccess world, int x, int y, int z, EnumFacing dir, Fluid fluid) {
         BlockPos pos = this.scratchPos.setPos(x, y, z);
         IBlockState blockState = world.getBlockState(pos);
+        boolean opaque = blockState.getMaterial().isOpaque();
+        // Resolve this block's own side before scratchPos is reused for the neighbor below.
+        boolean selfSideSolid = opaque && blockState.isSideSolid(world, pos, dir);
         BlockPos adjPos = this.scratchPos.setPos(x + dir.getXOffset(), y + dir.getYOffset(), z + dir.getZOffset());
         Fluid adjFluid = WorldUtil.getFluid(world.getBlockState(adjPos));
 
-        if (blockState.getMaterial().isOpaque()) {
-            return fluid == adjFluid || blockState.isSideSolid(world,pos,dir);
+        if (opaque) {
             // fluidlogged or next to water, occlude sides that are solid or the same liquid
+            return fluid == adjFluid || selfSideSolid;
         }
         return fluid == adjFluid;
     }
@@ -364,7 +367,8 @@ public class FluidRenderer {
 
         if (colorized) {
             IBlockState state = world.getBlockState(pos);
-            IBlockColor colorProvider = ((BlockColorsExtended)this.vanillaBlockColors).getColorProvider(state);
+            BlockColorsExtended blockColors = (BlockColorsExtended) this.vanillaBlockColors;
+            IBlockColor colorProvider = blockColors.hasColorProvider(state) ? blockColors.getColorProvider(state) : null;
             boolean containsColoredQuad = false;
             if(colorProvider != null) {
                 biomeColors = this.biomeColorBlender.getColors(colorProvider, world, state, pos, quad);

@@ -47,21 +47,29 @@ public class WorldUtil {
 
         IBlockState state = world.getBlockState(pos);
         if (state.getValue(BlockLiquid.LEVEL) >= 8) {
-            if (thizz.isSideSolid(world, pos.north(), EnumFacing.NORTH)
-                    || thizz.isSideSolid(world, pos.south(), EnumFacing.SOUTH)
-                    || thizz.isSideSolid(world, pos.west(), EnumFacing.WEST)
-                    || thizz.isSideSolid(world, pos.east(), EnumFacing.EAST)
-                    || thizz.isSideSolid(world, pos.up().north(), EnumFacing.NORTH)
-                    || thizz.isSideSolid(world, pos.up().south(), EnumFacing.SOUTH)
-                    || thizz.isSideSolid(world, pos.up().west(), EnumFacing.WEST)
-                    || thizz.isSideSolid(world, pos.up().east(), EnumFacing.EAST)) {
-                velocity = velocity.normalize().add(0.0D, -6.0D, 0.0D);
+            if (hasSolidSide(world, pos.north(), EnumFacing.NORTH)
+                    || hasSolidSide(world, pos.south(), EnumFacing.SOUTH)
+                    || hasSolidSide(world, pos.west(), EnumFacing.WEST)
+                    || hasSolidSide(world, pos.east(), EnumFacing.EAST)
+                    || hasSolidSide(world, pos.up().north(), EnumFacing.NORTH)
+                    || hasSolidSide(world, pos.up().south(), EnumFacing.SOUTH)
+                    || hasSolidSide(world, pos.up().west(), EnumFacing.WEST)
+                    || hasSolidSide(world, pos.up().east(), EnumFacing.EAST)) {
+                // JOML normalize() returns NaN for a zero vector (vanilla Vec3d returns zero); guard it.
+                if (velocity.x != 0 || velocity.y != 0 || velocity.z != 0) {
+                    velocity = velocity.normalize();
+                }
+                velocity = velocity.add(0.0D, -6.0D, 0.0D);
             }
         }
 
         if (velocity.x == 0 && velocity.y == 0 && velocity.z == 0)
             return velocity.zero();
         return velocity.normalize();
+    }
+
+    private static boolean hasSolidSide(IBlockAccess world, BlockPos pos, EnumFacing side) {
+        return world.getBlockState(pos).isSideSolid(world, pos, side);
     }
 
     /**
