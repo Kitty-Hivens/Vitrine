@@ -7,8 +7,6 @@ import me.jellysquid.mods.sodium.client.world.WorldSlice;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.BiomeColorHelper;
 
-import java.util.Arrays;
-
 public class BiomeColorCache {
     private static final int BLENDED_COLORS_DIM = 16 + 2 * 2;
 
@@ -17,6 +15,9 @@ public class BiomeColorCache {
 
     private final int[] blendedColors;
     private final int[] cache;
+    // Separate populated flags: a color sentinel (-1) collides with packed white (0xFFFFFFFF).
+    private final boolean[] blendedColorsComputed;
+    private final boolean[] cacheComputed;
 
     private final int radius;
     private final int dim;
@@ -45,9 +46,8 @@ public class BiomeColorCache {
 
         this.cache = new int[this.dim * this.dim];
         this.blendedColors = new int[BLENDED_COLORS_DIM * BLENDED_COLORS_DIM];
-
-        Arrays.fill(this.cache, -1);
-        Arrays.fill(this.blendedColors, -1);
+        this.cacheComputed = new boolean[this.cache.length];
+        this.blendedColorsComputed = new boolean[this.blendedColors.length];
     }
 
     public int getBlendedColor(BlockPos pos) {
@@ -55,13 +55,13 @@ public class BiomeColorCache {
         int z2 = pos.getZ() - this.blendedColorsMinZ;
 
         int index = (x2 * BLENDED_COLORS_DIM) + z2;
-        int color = this.blendedColors[index];
 
-        if (color == -1) {
-            this.blendedColors[index] = color = this.calculateBlendedColor(pos.getX(), pos.getZ());
+        if (!this.blendedColorsComputed[index]) {
+            this.blendedColors[index] = this.calculateBlendedColor(pos.getX(), pos.getZ());
+            this.blendedColorsComputed[index] = true;
         }
 
-        return color;
+        return this.blendedColors[index];
     }
 
     private int calculateBlendedColor(int posX, int posZ) {
@@ -97,13 +97,13 @@ public class BiomeColorCache {
 
     private int getColor(int x, int z) {
         int index = ((x - this.minX) * this.dim) + (z - this.minZ);
-        int color = this.cache[index];
 
-        if (color == -1) {
-            this.cache[index] = color = this.calculateColor(x, z);
+        if (!this.cacheComputed[index]) {
+            this.cache[index] = this.calculateColor(x, z);
+            this.cacheComputed[index] = true;
         }
 
-        return color;
+        return this.cache[index];
     }
 
     private int calculateColor(int x, int z) {
