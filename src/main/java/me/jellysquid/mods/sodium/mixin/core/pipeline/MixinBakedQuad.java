@@ -31,8 +31,8 @@ public class MixinBakedQuad implements ModelQuadView {
     }
 
     @Shadow @Final protected VertexFormat format;
-    protected int cachedFlags;
-    private boolean flagsComputed;
+    protected volatile int cachedFlags;
+    private volatile boolean flagsComputed;
 
     private VertexFormatDescription formatDescription;
 
