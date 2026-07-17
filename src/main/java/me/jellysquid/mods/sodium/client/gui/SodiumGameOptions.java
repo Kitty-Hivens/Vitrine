@@ -114,6 +114,10 @@ public class SodiumGameOptions {
         if (Files.exists(path)) {
             try (FileReader reader = new FileReader(path.toFile())) {
                 config = GSON.fromJson(reader, SodiumGameOptions.class);
+                if (config == null) {
+                    // An empty or all-whitespace file parses to null rather than throwing.
+                    config = new SodiumGameOptions();
+                }
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse config", e);
             } catch (JsonSyntaxException e) {

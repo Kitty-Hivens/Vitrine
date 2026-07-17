@@ -423,9 +423,16 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
             if (job == null) {
                 synchronized (ChunkBuilder.this.jobNotifier) {
-                    try {
-                        ChunkBuilder.this.jobNotifier.wait();
-                    } catch (InterruptedException ignored) {
+                    // Re-check under the lock: a producer may enqueue and notify between the poll above and
+                    // acquiring the monitor. Without this re-poll the worker can sleep on a non-empty queue,
+                    // and if it races stopWorkers()'s notifyAll it sleeps forever -- hanging thread.join() on
+                    // world unload.
+                    job = ChunkBuilder.this.buildQueue.poll();
+                    if (job == null) {
+                        try {
+                            ChunkBuilder.this.jobNotifier.wait();
+                        } catch (InterruptedException ignored) {
+                        }
                     }
                 }
             }
