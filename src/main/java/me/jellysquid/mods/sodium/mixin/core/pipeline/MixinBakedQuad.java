@@ -32,14 +32,17 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Shadow @Final protected VertexFormat format;
     protected int cachedFlags;
+    private boolean flagsComputed;
 
     private VertexFormatDescription formatDescription;
 
     @Inject(method = "<init>([IILnet/minecraft/util/EnumFacing;Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;ZLnet/minecraft/client/renderer/vertex/VertexFormat;)V", at = @At("RETURN"))
     private void init(int[] vertexData, int colorIndex, EnumFacing face, TextureAtlasSprite sprite, boolean shade, VertexFormat format, CallbackInfo ci) {
         this.formatDescription = VertexFormatDescription.get(format);
+        // UnpackedBakedQuad packs its vertex data lazily and has none at this point, so defer its flags to first getFlags().
         if(!UnpackedBakedQuad.class.isAssignableFrom(this.getClass())) {
             this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
+            this.flagsComputed = true;
         }
     }
 
@@ -108,6 +111,10 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Override
     public int getFlags() {
+        if (!this.flagsComputed) {
+            this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
+            this.flagsComputed = true;
+        }
         return this.cachedFlags;
     }
 
