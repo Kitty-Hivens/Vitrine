@@ -168,10 +168,11 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
         } catch (Throwable ex) {
             // Create a new crash report for other exceptions (e.g. thrown in getQuads)
             throw fillCrashInfo(CrashReport.makeCrashReport(ex, "Encountered exception while building chunk meshes"), slice, pos);
+        } finally {
+            // Must be reset on cancellation and crash paths too: the render layer is a thread-local,
+            // and a stale value would leak into the next task executed on this worker thread.
+            ForgeHooksClient.setRenderLayer(null);
         }
-
-        
-        ForgeHooksClient.setRenderLayer(null);
 
         render.setRebuildForTranslucents(false);
         for (BlockRenderPass pass : BlockRenderPass.VALUES) {

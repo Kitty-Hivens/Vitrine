@@ -62,6 +62,11 @@ public class ChunkOneshotGraphicsState extends ChunkGraphicsState {
     @Override
     public void delete(CommandList commandList) {
         commandList.deleteBuffer(this.vertexBuffer);
+
+        if (this.tessellation != null) {
+            commandList.deleteTessellation(this.tessellation);
+            this.tessellation = null;
+        }
     }
 
     public void upload(CommandList commandList, ChunkMeshData meshData) {
@@ -70,6 +75,11 @@ public class ChunkOneshotGraphicsState extends ChunkGraphicsState {
         commandList.uploadData(this.vertexBuffer, vertexData);
 
         GlVertexFormat<ChunkMeshAttribute> vertexFormat = (GlVertexFormat<ChunkMeshAttribute>) vertexData.format;
+
+        // The tessellation is recreated on every upload; the previous VAO must be released or it leaks.
+        if (this.tessellation != null) {
+            commandList.deleteTessellation(this.tessellation);
+        }
 
         this.tessellation = commandList.createTessellation(GlPrimitiveType.QUADS, new TessellationBinding[] {
                 new TessellationBinding(this.vertexBuffer, new GlVertexAttributeBinding[] {

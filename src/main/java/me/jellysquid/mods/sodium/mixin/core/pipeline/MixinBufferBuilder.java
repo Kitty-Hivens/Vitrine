@@ -17,12 +17,24 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 
 @Mixin(BufferBuilder.class)
 public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrain {
 
     @Shadow
     private ByteBuffer byteBuffer;
+
+    @Shadow
+    private IntBuffer rawIntBuffer;
+
+    @Shadow
+    private ShortBuffer rawShortBuffer;
+
+    @Shadow
+    private FloatBuffer rawFloatBuffer;
 
     @Shadow
     @Final
@@ -64,6 +76,8 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
 
         LOGGER.debug("Needed to grow BufferBuilder buffer: Old size {} bytes, new size {} bytes.", this.byteBuffer.capacity(), newSize);
 
+        int intPosition = this.rawIntBuffer.position();
+
         this.byteBuffer.position(0);
 
         ByteBuffer byteBuffer = GLAllocation.createDirectByteBuffer(newSize);
@@ -71,6 +85,16 @@ public abstract class MixinBufferBuilder implements VertexBufferView, VertexDrai
         byteBuffer.rewind();
 
         this.byteBuffer = byteBuffer;
+
+        // 1.12's BufferBuilder keeps derived views over the backing buffer. Vanilla growBuffer()
+        // recreates them after swapping the buffer; if we don't, any vanilla code path that runs
+        // afterwards (addVertexData, putColorMultiplier, sortVertexData) reads and writes through
+        // views that still point at the orphaned old buffer.
+        this.rawFloatBuffer = this.byteBuffer.asFloatBuffer().asReadOnlyBuffer();
+        this.rawIntBuffer = this.byteBuffer.asIntBuffer();
+        this.rawIntBuffer.position(intPosition);
+        this.rawShortBuffer = this.byteBuffer.asShortBuffer();
+        this.rawShortBuffer.position(intPosition << 1);
 
         return true;
     }

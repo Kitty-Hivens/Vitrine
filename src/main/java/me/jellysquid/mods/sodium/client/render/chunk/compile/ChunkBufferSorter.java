@@ -27,24 +27,25 @@ public class ChunkBufferSorter {
         // Quad stride by Float size
         int quadStride = vertexType.getBufferVertexFormat().getStride();
 
-        int quadStart = ((Buffer)buffer).position();
         int quadCount = bufferLen/quadStride/4;
 
         float[] distanceArray = new float[quadCount];
         int[] indicesArray = new int[quadCount];
 
+        // NOTE: asShortBuffer()/asFloatBuffer() views already begin at the buffer's current position,
+        // so element offsets below are relative to it and must not add the byte position again.
         if(isCompact) {
             ShortBuffer shortBuffer = buffer.asShortBuffer();
             int vertexSizeShort = quadStride / 2;
             for (int quadIdx = 0; quadIdx < quadCount; ++quadIdx) {
-                distanceArray[quadIdx] = getDistanceSqHFP(shortBuffer, x, y, z, vertexSizeShort, quadStart + (quadIdx * quadStride * 2));
+                distanceArray[quadIdx] = getDistanceSqHFP(shortBuffer, x, y, z, vertexSizeShort, quadIdx * quadStride * 2);
                 indicesArray[quadIdx] = quadIdx;
             }
         } else {
             FloatBuffer floatBuffer = buffer.asFloatBuffer();
             int vertexSizeInteger = quadStride / 4;
             for (int quadIdx = 0; quadIdx < quadCount; ++quadIdx) {
-                distanceArray[quadIdx] = getDistanceSqSFP(floatBuffer, x, y, z, vertexSizeInteger, quadStart + (quadIdx * quadStride));
+                distanceArray[quadIdx] = getDistanceSqSFP(floatBuffer, x, y, z, vertexSizeInteger, quadIdx * quadStride);
                 indicesArray[quadIdx] = quadIdx;
             }
         }
@@ -56,10 +57,10 @@ public class ChunkBufferSorter {
             }
         });
 
-        rearrangeQuads(buffer, indicesArray, quadStride, quadStart);
+        rearrangeQuads(buffer, indicesArray, quadStride);
     }
 
-    private static void rearrangeQuads(ByteBuffer quadBuffer, int[] indicesArray, int quadStride, int quadStart) {
+    private static void rearrangeQuads(ByteBuffer quadBuffer, int[] indicesArray, int quadStride) {
         FloatBuffer floatBuffer = quadBuffer.asFloatBuffer();
         BitSet bits = new BitSet();
 
@@ -69,24 +70,24 @@ public class ChunkBufferSorter {
             int m = indicesArray[l];
 
             if (m != l) {
-                sliceQuad(floatBuffer, m, quadStride, quadStart);
+                sliceQuad(floatBuffer, m, quadStride);
                 ((Buffer)tmp).clear();
                 tmp.put(floatBuffer);
 
                 int n = m;
 
                 for (int o = indicesArray[m]; n != l; o = indicesArray[o]) {
-                    sliceQuad(floatBuffer, o, quadStride, quadStart);
+                    sliceQuad(floatBuffer, o, quadStride);
                     FloatBuffer floatBuffer3 = floatBuffer.slice();
 
-                    sliceQuad(floatBuffer, n, quadStride, quadStart);
+                    sliceQuad(floatBuffer, n, quadStride);
                     floatBuffer.put(floatBuffer3);
 
                     bits.set(n);
                     n = o;
                 }
 
-                sliceQuad(floatBuffer, l, quadStride, quadStart);
+                sliceQuad(floatBuffer, l, quadStride);
                 ((Buffer)tmp).flip();
 
                 floatBuffer.put(tmp);
@@ -96,8 +97,8 @@ public class ChunkBufferSorter {
         }
     }
 
-    private static void sliceQuad(FloatBuffer floatBuffer, int quadIdx, int quadStride, int quadStart) {
-        int base = quadStart + (quadIdx * quadStride);
+    private static void sliceQuad(FloatBuffer floatBuffer, int quadIdx, int quadStride) {
+        int base = quadIdx * quadStride;
 
         ((Buffer)floatBuffer).limit(base + quadStride);
         ((Buffer)floatBuffer).position(base);
