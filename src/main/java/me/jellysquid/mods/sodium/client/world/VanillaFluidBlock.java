@@ -29,7 +29,10 @@ public interface VanillaFluidBlock {
         public Fluid getFluid() {
             Fluid fluid = sodium$forgeFluid;
             if(fluid == null) {
-                sodium$forgeFluid = fluid = block.getDefaultState().getMaterial() == Material.WATER ? FluidRegistry.WATER : FluidRegistry.LAVA;
+                // Only genuine lava maps to lava; unknown BlockLiquid subclasses default to water rather
+                // than being rendered as fullbright lava.
+                Material material = block.getDefaultState().getMaterial();
+                sodium$forgeFluid = fluid = material == Material.LAVA ? FluidRegistry.LAVA : FluidRegistry.WATER;
             }
             return fluid;
         }

@@ -28,17 +28,17 @@ public abstract class MixinClientChunkManager implements ChunkStatusListenerMana
 
     @Inject(method = "loadChunk", at = @At("RETURN"))
     private void afterLoadChunkFromPacket(int x, int z, CallbackInfoReturnable<Chunk> cir) {
+        this.loadedChunks.add(ChunkPos.asLong(x, z));
         if (this.listener != null) {
             this.listener.onChunkAdded(x, z);
-            this.loadedChunks.add(ChunkPos.asLong(x, z));
         }
     }
 
     @Inject(method = "unloadChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;onUnload()V", shift = At.Shift.AFTER))
     private void afterUnloadChunk(int x, int z, CallbackInfo ci) {
+        this.loadedChunks.remove(ChunkPos.asLong(x, z));
         if (this.listener != null) {
             this.listener.onChunkRemoved(x, z);
-            this.loadedChunks.remove(ChunkPos.asLong(x, z));
         }
     }
 
@@ -93,5 +93,15 @@ public abstract class MixinClientChunkManager implements ChunkStatusListenerMana
     @Override
     public void setListener(ChunkStatusListener listener) {
         this.listener = listener;
+
+        if (listener != null) {
+            // Replay chunks that loaded before this listener was attached (e.g. on a world switch),
+            // which would otherwise never receive an onChunkAdded.
+            LongIterator it = this.loadedChunks.iterator();
+            while (it.hasNext()) {
+                long pos = it.nextLong();
+                listener.onChunkAdded(MathChunkPos.getX(pos), MathChunkPos.getZ(pos));
+            }
+        }
     }
 }
