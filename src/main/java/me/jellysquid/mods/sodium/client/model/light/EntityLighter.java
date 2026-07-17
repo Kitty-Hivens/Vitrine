@@ -89,11 +89,6 @@ public class EntityLighter {
             }
         }
 
-        // Fully enclosed in opaque blocks: nothing contributed to the sampling volume; avoid a 0/0 NaN.
-        if (max == 0.0D) {
-            return 0;
-        }
-
         // The final light value is calculated from the percentage of light contributed out of the total maximum
         int bli = MathHelper.floor((bl / max) * MAX_LIGHTMAP_COORD);
         int sli = MathHelper.floor((sl / max) * MAX_LIGHTMAP_COORD);

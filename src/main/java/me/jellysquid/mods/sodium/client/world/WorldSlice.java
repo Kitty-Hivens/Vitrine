@@ -370,12 +370,7 @@ public class WorldSlice implements SodiumBlockAccess {
         int x2 = (pos.getX() - this.baseX) >> 4;
         int z2 = (pos.getZ() - this.baseZ) >> 4;
 
-        int idx = getLocalChunkIndex(x2, z2);
-        if (idx < 0 || idx >= this.sections.length) {
-            return Biomes.PLAINS;
-        }
-
-        ClonedChunkSection section = this.sections[idx];
+        ClonedChunkSection section = this.sections[getLocalChunkIndex(x2, z2)];
 
         if (section != null) {
             return section.getBiomeForNoiseGen(pos.getX() & 15, pos.getZ() & 15);

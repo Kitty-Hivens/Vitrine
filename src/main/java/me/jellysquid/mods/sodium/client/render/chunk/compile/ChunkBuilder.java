@@ -423,14 +423,9 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
             if (job == null) {
                 synchronized (ChunkBuilder.this.jobNotifier) {
-                    // Re-check under the lock: a producer may have enqueued and notified between the poll
-                    // above and acquiring the monitor, which would otherwise be a lost wakeup.
-                    job = ChunkBuilder.this.buildQueue.poll();
-                    if (job == null) {
-                        try {
-                            ChunkBuilder.this.jobNotifier.wait();
-                        } catch (InterruptedException ignored) {
-                        }
+                    try {
+                        ChunkBuilder.this.jobNotifier.wait();
+                    } catch (InterruptedException ignored) {
                     }
                 }
             }

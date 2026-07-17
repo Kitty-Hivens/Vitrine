@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 public class FutureDequeDrain<T> implements Iterator<T> {
     private final Deque<CompletableFuture<T>> deque;
@@ -35,9 +34,6 @@ public class FutureDequeDrain<T> implements Iterator<T> {
                 return;
             } catch (CancellationException e) {
                 // no-op
-            } catch (CompletionException e) {
-                // The worker already logged the root cause; skip the failed build rather than letting
-                // it propagate onto the render thread and take down rendering.
             }
         }
     }
