@@ -163,6 +163,12 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
             ChunkBuildResult<T> result = uploadIterator.next();
             ChunkRenderContainer<T> section = result.render;
 
+            // Drop a translucency-sort result whose mesh a later-scheduled rebuild superseded; uploading it
+            // would overwrite the fresh mesh with stale, re-sorted old data.
+            if (result.generation != -1 && result.generation != section.getRebuildGeneration()) {
+                continue;
+            }
+
             ChunkBuildResult<T> oldResult = map.get(section);
 
             // Allow a result to replace the previous result in the map if one of the following conditions hold:
@@ -356,7 +362,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
     private ChunkRenderBuildTask<T> createSortTask(ChunkRenderContainer<T> render) {
         render.cancelRebuildTask();
 
-        return new ChunkRenderTranslucencySortTask<>(render, render.getRenderOrigin(), this.cameraPosition);
+        return new ChunkRenderTranslucencySortTask<>(render, render.getRenderOrigin(), this.cameraPosition, render.getRebuildGeneration());
     }
 
     public void onChunkDataChanged(int x, int y, int z) {

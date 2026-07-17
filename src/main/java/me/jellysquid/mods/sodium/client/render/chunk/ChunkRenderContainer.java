@@ -28,6 +28,9 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     private ChunkRenderData data = ChunkRenderData.ABSENT;
     private CompletableFuture<Void> rebuildTask = null;
 
+    // Bumped on every rebuild request; a translucency sort captures it and is dropped at upload if it moved.
+    private int rebuildGeneration;
+
     private boolean needsRebuild;
     private boolean needsImportantRebuild;
 
@@ -68,6 +71,10 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     public ChunkRenderData getData() {
         return this.data;
+    }
+
+    public int getRebuildGeneration() {
+        return this.rebuildGeneration;
     }
 
     /**
@@ -143,6 +150,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         this.needsImportantRebuild = important;
         this.needsRebuild = true;
         this.needsSort = false;
+        this.rebuildGeneration++;
 
         return changed;
     }

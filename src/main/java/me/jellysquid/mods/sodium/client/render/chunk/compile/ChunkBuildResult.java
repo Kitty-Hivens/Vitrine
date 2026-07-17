@@ -15,6 +15,10 @@ public class ChunkBuildResult<T extends ChunkGraphicsState> {
     public final ChunkRenderData data;
     public BlockRenderPass[] passesToUpload;
 
+    // -1 for a rebuild; a translucency sort sets the container generation it was based on so a superseded
+    // sort can be dropped before it overwrites a newer mesh.
+    public int generation = -1;
+
     public ChunkBuildResult(ChunkRenderContainer<T> render, ChunkRenderData data) {
         this.render = render;
         this.data = data;

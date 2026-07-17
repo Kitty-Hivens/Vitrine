@@ -34,12 +34,13 @@ public class ChunkRenderTranslucencySortTask<T extends ChunkGraphicsState> exten
     private final ChunkRenderContainer<T> render;
     private final BlockPos offset;
     private final Vec3d camera;
+    private final int generation;
 
-    public ChunkRenderTranslucencySortTask(ChunkRenderContainer<T> render, BlockPos offset, Vec3d camera) {
+    public ChunkRenderTranslucencySortTask(ChunkRenderContainer<T> render, BlockPos offset, Vec3d camera, int generation) {
         this.render = render;
         this.offset = offset;
         this.camera = camera;
-
+        this.generation = generation;
     }
 
 
@@ -87,6 +88,7 @@ public class ChunkRenderTranslucencySortTask<T extends ChunkGraphicsState> exten
 
         ChunkBuildResult<T> result = new ChunkBuildResult<>(this.render, data.copyAndReplaceMesh(replacementMeshes));
         result.passesToUpload = replacementMeshes.keySet().toArray(NO_PASSES);
+        result.generation = this.generation;
         return result;
     }
 
