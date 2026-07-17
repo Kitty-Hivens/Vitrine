@@ -1,8 +1,8 @@
 package me.jellysquid.mods.sodium.mixin.features.entity.smooth_lighting;
 
+import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import me.jellysquid.mods.sodium.client.model.light.EntityLighter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,7 +25,7 @@ public abstract class MixinEntityRenderer<T extends Entity> {
 
     @Redirect(method = "renderEntityStatic", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;getBrightnessForRender()I"))
     private int sodium$getBrightnessForRender(Entity self) {
-        if (Minecraft.getMinecraft().gameSettings.ambientOcclusion == SodiumGameOptions.LightingQuality.HIGH.ordinal()) {
+        if (Vitrine.options().quality.smoothLighting == SodiumGameOptions.LightingQuality.HIGH) {
             return EntityLighter.getBlendedLight(self, tickDelta);
         }
 

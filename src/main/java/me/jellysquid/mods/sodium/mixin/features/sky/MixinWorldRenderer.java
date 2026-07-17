@@ -46,7 +46,7 @@ public class MixinWorldRenderer {
 
         boolean hasBlindness = cameraEntity instanceof EntityLivingBase && ((EntityLivingBase) cameraEntity).getActivePotionEffect(MobEffects.BLINDNESS) != null;
         boolean useThickFog = this.mc.world.provider.doesXZShowFog(MathHelper.floor(cameraPosition.x),
-                MathHelper.floor(cameraPosition.y)) || this.mc.ingameGUI.getBossOverlay().shouldCreateFog();
+                MathHelper.floor(cameraPosition.z)) || this.mc.ingameGUI.getBossOverlay().shouldCreateFog();
 
         if (hasBlindness || useThickFog) {
             callbackInfo.cancel();

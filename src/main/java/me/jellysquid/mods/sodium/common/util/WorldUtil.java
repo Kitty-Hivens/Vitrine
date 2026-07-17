@@ -51,8 +51,8 @@ public class WorldUtil {
                     || thizz.isSideSolid(world, pos.south(), EnumFacing.SOUTH)
                     || thizz.isSideSolid(world, pos.west(), EnumFacing.WEST)
                     || thizz.isSideSolid(world, pos.east(), EnumFacing.EAST)
-                    || thizz.isSideSolid(world, pos.up().south(), EnumFacing.NORTH)
-                    || thizz.isSideSolid(world, pos.up().west(), EnumFacing.SOUTH)
+                    || thizz.isSideSolid(world, pos.up().north(), EnumFacing.NORTH)
+                    || thizz.isSideSolid(world, pos.up().south(), EnumFacing.SOUTH)
                     || thizz.isSideSolid(world, pos.up().west(), EnumFacing.WEST)
                     || thizz.isSideSolid(world, pos.up().east(), EnumFacing.EAST)) {
                 velocity = velocity.normalize().add(0.0D, -6.0D, 0.0D);
@@ -69,9 +69,9 @@ public class WorldUtil {
      * Equivalent to FluidState::method_15756 in modern.
      */
     public static boolean method_15756(IBlockAccess world, BlockPos pos, Fluid fluid) {
-        for (int i = 0; i < 2; ++i) {
-            for (int j = 0; j < 2; ++j) {
-                IBlockState block = world.getBlockState(pos);
+        for (int i = -1; i <= 1; ++i) {
+            for (int j = -1; j <= 1; ++j) {
+                IBlockState block = world.getBlockState(pos.add(i, 0, j));
                 if (!block.isOpaqueCube() && getFluid(block) != fluid) {
                     return true;
                 }
