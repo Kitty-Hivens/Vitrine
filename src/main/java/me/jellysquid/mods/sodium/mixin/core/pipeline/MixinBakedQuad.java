@@ -31,8 +31,11 @@ public class MixinBakedQuad implements ModelQuadView {
     }
 
     @Shadow @Final protected VertexFormat format;
-    protected int cachedFlags;
-    private boolean flagsComputed;
+    // High bit marks "computed", the low bits hold the value (ModelQuadFlags uses only 3). Packing both
+    // into one volatile field publishes them together, so a concurrent reader never sees the computed
+    // marker without its value.
+    private static final int FLAGS_COMPUTED = 0x80000000;
+    protected volatile int cachedFlags;
 
     private VertexFormatDescription formatDescription;
 
@@ -41,8 +44,7 @@ public class MixinBakedQuad implements ModelQuadView {
         this.formatDescription = VertexFormatDescription.get(format);
         // UnpackedBakedQuad packs its vertex data lazily and has none at this point, so defer its flags to first getFlags().
         if(!UnpackedBakedQuad.class.isAssignableFrom(this.getClass())) {
-            this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
-            this.flagsComputed = true;
+            this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this) | FLAGS_COMPUTED;
         }
     }
 
@@ -111,11 +113,12 @@ public class MixinBakedQuad implements ModelQuadView {
 
     @Override
     public int getFlags() {
-        if (!this.flagsComputed) {
-            this.cachedFlags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this);
-            this.flagsComputed = true;
+        int flags = this.cachedFlags;
+        if (flags == 0) {
+            flags = ModelQuadFlags.getQuadFlags((BakedQuad) (Object) this) | FLAGS_COMPUTED;
+            this.cachedFlags = flags;
         }
-        return this.cachedFlags;
+        return flags & ~FLAGS_COMPUTED;
     }
 
     @Override
