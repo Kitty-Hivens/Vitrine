@@ -19,7 +19,9 @@ import me.jellysquid.mods.sodium.client.world.biome.BlockColorsExtended;
 import me.jellysquid.mods.sodium.common.util.DirectionUtil;
 import me.jellysquid.mods.sodium.common.util.WorldUtil;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockBreakable;
 import net.minecraft.block.BlockLiquid;
+import net.minecraft.block.BlockStainedGlass;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -318,7 +320,10 @@ public class FluidRenderer {
                     BlockPos adjPos = this.scratchPos.setPos(adjX, adjY, adjZ);
                     IBlockState adjBlock = world.getBlockState(adjPos);
 
-                    if (adjBlock.getBlockFaceShape(world, adjPos, dir.getOpposite()) == net.minecraft.block.state.BlockFaceShape.SOLID) {
+                    // Vanilla BlockFluidRenderer selects the overlay by block type (glass/ice/stained glass),
+                    // not by face shape; the shape test mis-picked flow vs overlay for glass and leaves.
+                    Block adjBlockType = adjBlock.getBlock();
+                    if (adjBlockType instanceof BlockBreakable || adjBlockType instanceof BlockStainedGlass) {
                         sprite = oSprite;
                     }
                 }
