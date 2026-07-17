@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import me.jellysquid.mods.sodium.client.util.math.ChunkSectionPos;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
@@ -14,12 +15,11 @@ import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClonedChunkSection {
-    private static final ExtendedBlockStorage EMPTY_SECTION = new ExtendedBlockStorage(0, false);
-
     private final AtomicInteger referenceCount = new AtomicInteger(0);
     private final ClonedChunkSectionCache backingCache;
 
@@ -28,11 +28,12 @@ public class ClonedChunkSection {
 
     private ChunkSectionPos pos;
 
-    private ExtendedBlockStorage data;
+    private IBlockState[] blockStates;
+    private NibbleArray blockLight;
+    private NibbleArray skyLight;
+    private boolean hasSkyLight;
 
     private Biome[] biomeData;
-
-    private byte[][] lightData;
 
     private long lastUsedTimestamp = Long.MAX_VALUE;
 
@@ -50,13 +51,36 @@ public class ClonedChunkSection {
         }
 
         ExtendedBlockStorage section = getChunkSection(chunk, pos);
-
-        if (section == Chunk.NULL_BLOCK_STORAGE/*ChunkSection.isEmpty(section)*/) {
-            section = EMPTY_SECTION;
-        }
+        boolean empty = section == Chunk.NULL_BLOCK_STORAGE;
 
         this.pos = pos;
-        this.data = section;
+        this.hasSkyLight = world.provider.hasSkyLight();
+
+        // Deep-copy block states and light on the (main) snapshot thread so build workers never read the
+        // live section while it is being mutated -- reading the live section was a data race.
+        IBlockState[] states = new IBlockState[4096];
+        Arrays.fill(states, Blocks.AIR.getDefaultState());
+
+        if (!empty) {
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        states[y << 8 | z << 4 | x] = section.get(x, y, z);
+                    }
+                }
+            }
+
+            NibbleArray sectionBlockLight = section.getBlockLight();
+            this.blockLight = sectionBlockLight != null ? new NibbleArray(sectionBlockLight.getData().clone()) : null;
+
+            NibbleArray sectionSkyLight = section.getSkyLight();
+            this.skyLight = sectionSkyLight != null ? new NibbleArray(sectionSkyLight.getData().clone()) : null;
+        } else {
+            this.blockLight = null;
+            this.skyLight = null;
+        }
+
+        this.blockStates = states;
 
         this.biomeData = new Biome[chunk.getBiomeArray().length];
 
@@ -84,7 +108,7 @@ public class ClonedChunkSection {
     }
 
     public IBlockState getBlockState(int x, int y, int z) {
-        return data.get(x, y, z);
+        return this.blockStates[y << 8 | z << 4 | x];
     }
 
     public Biome getBiomeForNoiseGen(int x, int z) {
@@ -104,8 +128,14 @@ public class ClonedChunkSection {
     }
 
     public int getLightLevel(int x, int y, int z, EnumSkyBlock type) {
-        NibbleArray lightArray = type == EnumSkyBlock.BLOCK ? this.data.getBlockLight() : this.data.getSkyLight();
-        return lightArray != null ? lightArray.get(x, y, z) : type.defaultLightValue;
+        if (type == EnumSkyBlock.BLOCK) {
+            return this.blockLight != null ? this.blockLight.get(x, y, z) : 0;
+        }
+        if (this.skyLight != null) {
+            return this.skyLight.get(x, y, z);
+        }
+        // Empty section with no sky array: sunlit only if the dimension has a sky (was unconditionally 15).
+        return this.hasSkyLight ? EnumSkyBlock.SKY.defaultLightValue : 0;
     }
 
     private static ExtendedBlockStorage getChunkSection(Chunk chunk, ChunkSectionPos pos) {
