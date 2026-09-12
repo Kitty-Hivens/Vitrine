@@ -1,8 +1,5 @@
-# A deployment template that works out of the box
-# It supports these objectives:
-# - Deploy to Maven (Build Job) [Secrets: MAVEN_USER, MAVEN_PASS]
-# - Deploy to CurseForge (Upload Job) [Secrets: CURSEFORGE_TOKEN]
-# - Deploy to Modrinth (Upload Job) [Secrets: MODRINTH_TOKEN]
+# Cuts a GitHub release from a version tag.
+# Nothing leaves the repository: no Maven, no CurseForge, no Modrinth.
 
 name: Deploy
 
@@ -11,51 +8,59 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Grant Execute Permission for gradlew
         run: chmod +x gradlew
 
-      - name: Read gradle.properties
-        uses: BrycensRanch/read-properties-action@v1
-        id: properties
-        with:
-          file: gradle.properties
-          all: true
-
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'zulu'
           cache: gradle
 
-      - name: Publish to Maven
-        if: steps.properties.outputs.publish_to_maven == 'true' && steps.properties.outputs.publish_to_local_maven == 'true'
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: |
-            publish
-            -P${{ steps.properties.outputs.maven_name }}Username=${{ secrets.MAVEN_USER }}
-            -P${{ steps.properties.outputs.maven_name }}Password=${{ secrets.MAVEN_PASS }}
+      - name: Read the mod id, name and version
+        id: mod
+        run: |
+          read_property() {
+            grep -m1 -E "^[[:space:]]*$1[[:space:]]*=" gradle.properties | cut -d '=' -f 2- | awk '{$1=$1};1'
+          }
+          {
+            echo "id=$(read_property mod_id)"
+            echo "name=$(read_property mod_name)"
+            echo "version=$(read_property mod_version)"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Publish to CurseForge
-        if: steps.properties.outputs.publish_to_curseforge == 'true'
-        uses: gradle/gradle-build-action@v2
+      - name: Refuse a tag that does not match mod_version
         env:
-          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
-        with:
-          arguments: curseforge
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.mod.outputs.version }}
+        run: |
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "tag $TAG does not match mod_version $VERSION in gradle.properties"
+            exit 1
+          fi
 
-      - name: Publish to Modrinth
-        if: steps.properties.outputs.publish_to_modrinth == 'true'
-        uses: gradle/gradle-build-action@v2
+      - name: Build the mod
+        run: ./gradlew --no-daemon build
+
+      - name: Publish the release
         env:
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-        with:
-          arguments: modrinth
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          MOD_NAME: ${{ steps.mod.outputs.name }}
+          JAR: build/libs/${{ steps.mod.outputs.id }}-${{ steps.mod.outputs.version }}.jar
+        run: |
+          test -f "$JAR"
+          gh release create "$TAG" --title "$MOD_NAME $TAG" --generate-notes "$JAR"
