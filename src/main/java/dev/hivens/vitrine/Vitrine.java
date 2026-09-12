@@ -6,7 +6,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(modid = "vitrine", useMetadata = true)
+@Mod(modid = "vitrine", useMetadata = true, clientSideOnly = true)
 public class Vitrine {
 
     public static final String MODID = Tags.MOD_ID;
