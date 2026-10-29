@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gui.options.FormattedTextProvider;
+import me.jellysquid.mods.sodium.client.render.texture.AnimatedSpriteCategory;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
 
@@ -18,6 +19,7 @@ import java.nio.file.Path;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
+    public final AnimationSettings animations = new AnimationSettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
     public final PerformanceSettings performance = new PerformanceSettings();
     public final NotificationSettings notifications = new NotificationSettings();
@@ -57,6 +59,38 @@ public class SodiumGameOptions {
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
+    }
+
+    public static class AnimationSettings {
+        public boolean enabled = true;
+
+        public boolean water = true;
+        public boolean lava = true;
+        public boolean fire = true;
+        public boolean portal = true;
+        public boolean terrain = true;
+        public boolean textures = true;
+
+        public boolean isEnabled(AnimatedSpriteCategory category) {
+            if (!this.enabled) {
+                return false;
+            }
+
+            switch (category) {
+                case WATER:
+                    return this.water;
+                case LAVA:
+                    return this.lava;
+                case FIRE:
+                    return this.fire;
+                case PORTAL:
+                    return this.portal;
+                case TERRAIN:
+                    return this.terrain;
+                default:
+                    return this.textures;
+            }
+        }
     }
 
     public static class NotificationSettings {
