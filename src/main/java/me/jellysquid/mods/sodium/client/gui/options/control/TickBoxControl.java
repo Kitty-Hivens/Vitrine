@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
+import me.jellysquid.mods.sodium.client.gui.Palette;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.utils.Rect2i;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
@@ -50,9 +51,9 @@ public class TickBoxControl implements Control<Boolean> {
             final int color;
 
             if (enabled) {
-                color = ticked ? 0xFF94E4D3 : 0xFFFFFFFF;
+                color = ticked ? Palette.ACCENT : Palette.CONTROL;
             } else {
-                color = 0xFFAAAAAA;
+                color = Palette.CONTROL_DISABLED;
             }
 
             if (ticked) {
@@ -63,7 +64,7 @@ public class TickBoxControl implements Control<Boolean> {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 this.option.setValue(!this.option.getValue());
                 this.playClickSound();

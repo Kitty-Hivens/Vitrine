@@ -6,6 +6,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gui.options.FormattedTextProvider;
+import me.jellysquid.mods.sodium.client.render.texture.AnimatedSpriteCategory;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
 
@@ -15,9 +17,13 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class SodiumGameOptions {
     public final QualitySettings quality = new QualitySettings();
+    public final AnimationSettings animations = new AnimationSettings();
+    public final ParticleSettings particles = new ParticleSettings();
     public final AdvancedSettings advanced = new AdvancedSettings();
     public final PerformanceSettings performance = new PerformanceSettings();
     public final NotificationSettings notifications = new NotificationSettings();
@@ -57,6 +63,99 @@ public class SodiumGameOptions {
         public boolean enableClouds = true;
 
         public LightingQuality smoothLighting = LightingQuality.HIGH;
+    }
+
+    public static class AnimationSettings {
+        public boolean enabled = true;
+
+        public boolean water = true;
+        public boolean lava = true;
+        public boolean fire = true;
+        public boolean portal = true;
+        public boolean terrain = true;
+        public boolean textures = true;
+
+        public boolean isEnabled(AnimatedSpriteCategory category) {
+            if (!this.enabled) {
+                return false;
+            }
+
+            switch (category) {
+                case WATER:
+                    return this.water;
+                case LAVA:
+                    return this.lava;
+                case FIRE:
+                    return this.fire;
+                case PORTAL:
+                    return this.portal;
+                case TERRAIN:
+                    return this.terrain;
+                default:
+                    return this.textures;
+            }
+        }
+    }
+
+    public static class ParticleSettings {
+        public boolean enabled = true;
+
+        public boolean rainSplash = true;
+        public boolean blockBreak = true;
+        public boolean blockBreaking = true;
+
+        // Stored by name rather than id so the file stays readable and edits by hand stay meaningful.
+        public Set<String> disabledTypes = new TreeSet<>();
+
+        private boolean[] disabledById;
+
+        public boolean isTypeEnabled(EnumParticleTypes type) {
+            return type == null || this.isTypeEnabled(type.getParticleID());
+        }
+
+        /**
+         * @return True for ids no particle type uses, which belong to particles mods register without a type
+         */
+        public boolean isTypeEnabled(int particleId) {
+            boolean[] disabled = this.disabledById;
+
+            if (disabled == null) {
+                this.disabledById = disabled = this.resolveDisabledIds();
+            }
+
+            return particleId < 0 || particleId >= disabled.length || !disabled[particleId];
+        }
+
+        public void setTypeEnabled(EnumParticleTypes type, boolean enabled) {
+            if (enabled) {
+                this.disabledTypes.remove(type.getParticleName());
+            } else {
+                this.disabledTypes.add(type.getParticleName());
+            }
+
+            this.disabledById = null;
+        }
+
+        private boolean[] resolveDisabledIds() {
+            // Mods append their own types with ids of their choosing, so the highest id sizes the table
+            int maxId = 0;
+
+            for (EnumParticleTypes type : EnumParticleTypes.values()) {
+                maxId = Math.max(maxId, type.getParticleID());
+            }
+
+            boolean[] disabled = new boolean[maxId + 1];
+
+            for (String name : this.disabledTypes) {
+                EnumParticleTypes type = EnumParticleTypes.getByName(name);
+
+                if (type != null) {
+                    disabled[type.getParticleID()] = true;
+                }
+            }
+
+            return disabled;
+        }
     }
 
     public static class NotificationSettings {

@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
+import me.jellysquid.mods.sodium.client.gui.Palette;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.utils.Rect2i;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
@@ -85,7 +86,7 @@ public class SliderControl implements Control<Integer> {
             String label = this.formatter.format(this.option.getValue());
             int labelWidth = this.font.getStringWidth(label);
 
-            this.drawString(label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+            this.drawString(label, sliderX + sliderWidth - labelWidth, sliderY + (sliderHeight / 2) - 4, Palette.TEXT);
         }
 
         private void renderSlider() {
@@ -101,14 +102,14 @@ public class SliderControl implements Control<Integer> {
             double thumbX = sliderX + thumbOffset - THUMB_WIDTH;
             double trackY = sliderY + (sliderHeight / 2) - ((double) TRACK_HEIGHT / 2);
 
-            this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, 0xFFFFFFFF);
-            this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, 0xFFFFFFFF);
+            this.drawRect(thumbX, sliderY, thumbX + (THUMB_WIDTH * 2), sliderY + sliderHeight, Palette.CONTROL);
+            this.drawRect(sliderX, trackY, sliderX + sliderWidth, trackY + TRACK_HEIGHT, Palette.CONTROL);
 
             String label = String.valueOf(this.getIntValue());
 
             int labelWidth = this.font.getStringWidth(label);
 
-            this.drawString(label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, 0xFFFFFFFF);
+            this.drawString(label, sliderX - labelWidth - 6, sliderY + (sliderHeight / 2) - 4, Palette.TEXT);
         }
 
         public int getIntValue() {
@@ -124,7 +125,13 @@ public class SliderControl implements Control<Integer> {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        protected int getControlWidth() {
+            // While hovered the slider shows, with its numeric value to the left of it
+            return (this.dim.getLimitX() - this.sliderBounds.getX()) + 6 + this.font.getStringWidth(String.valueOf(this.getIntValue()));
+        }
+
+        @Override
+        protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.sliderBounds.contains((int) mouseX, (int) mouseY)) {
                 this.setValueFromMouse(mouseX);
 
