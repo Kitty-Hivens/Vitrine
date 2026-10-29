@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.options.control;
 
+import me.jellysquid.mods.sodium.client.gui.Palette;
 import me.jellysquid.mods.sodium.client.gui.options.FormattedTextProvider;
 import me.jellysquid.mods.sodium.client.gui.options.Option;
 import me.jellysquid.mods.sodium.client.gui.options.TextProvider;
@@ -103,11 +104,16 @@ public class CyclingControl<T extends Enum<T>> implements Control<T> {
             ITextComponent name = this.names[value.ordinal()];
 
             int strWidth = this.getTextWidth(name);
-            this.drawString(name.getFormattedText(), this.dim.getLimitX() - strWidth - 6, this.dim.getCenterY() - 4, 0xFFFFFFFF);
+            this.drawString(name.getFormattedText(), this.dim.getLimitX() - strWidth - 6, this.dim.getCenterY() - 4, Palette.TEXT);
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        protected int getControlWidth() {
+            return this.getTextWidth(this.names[this.option.getValue().ordinal()]) + 6;
+        }
+
+        @Override
+        protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
             if (this.option.isAvailable() && button == 0 && this.dim.containsCursor(mouseX, mouseY)) {
                 this.currentIndex = (this.option.getValue().ordinal() + 1) % this.allowedValues.length;
                 this.option.setValue(this.allowedValues[this.currentIndex]);

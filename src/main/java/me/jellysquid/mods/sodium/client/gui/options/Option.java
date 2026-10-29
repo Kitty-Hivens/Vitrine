@@ -13,6 +13,16 @@ public interface Option<T> {
 
     ITextComponent getTooltip();
 
+    /**
+     * @return True if the pending value is the default, or if the option has no known default
+     */
+    boolean isAtDefault();
+
+    /**
+     * Sets the pending value to the default. Like any other change, it takes effect once applied.
+     */
+    void resetToDefault();
+
     OptionImpact getImpact();
 
     Control<T> getControl();

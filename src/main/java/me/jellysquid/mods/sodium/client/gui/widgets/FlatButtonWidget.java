@@ -1,5 +1,6 @@
 package me.jellysquid.mods.sodium.client.gui.widgets;
 
+import me.jellysquid.mods.sodium.client.gui.Palette;
 import me.jellysquid.mods.sodium.client.gui.utils.Drawable;
 import me.jellysquid.mods.sodium.client.util.Dim2i;
 import net.minecraft.util.text.ITextComponent;
@@ -32,8 +33,8 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
 
         boolean hovered = this.dim.containsCursor(mouseX, mouseY);
 
-        int backgroundColor = this.enabled ? (hovered ? 0xE0000000 : 0x90000000) : 0x60000000;
-        int textColor = this.enabled ? 0xFFFFFFFF : 0x90FFFFFF;
+        int backgroundColor = this.enabled ? (hovered ? Palette.PANEL_HOVERED : Palette.PANEL) : Palette.PANEL_DISABLED;
+        int textColor = this.enabled ? Palette.TEXT : Palette.TEXT_DISABLED;
 
         int strWidth = this.font.getStringWidth(this.label.getFormattedText());
 
@@ -41,7 +42,7 @@ public class FlatButtonWidget extends AbstractWidget implements Drawable {
         this.drawString(this.label.getFormattedText(), this.dim.getCenterX() - (strWidth / 2), this.dim.getCenterY() - 4, textColor);
 
         if (this.enabled && this.selected) {
-            this.drawRect(this.dim.getOriginX(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), 0xFF94E4D3);
+            this.drawRect(this.dim.getOriginX(), this.dim.getLimitY() - 1, this.dim.getLimitX(), this.dim.getLimitY(), Palette.ACCENT);
         }
     }
 

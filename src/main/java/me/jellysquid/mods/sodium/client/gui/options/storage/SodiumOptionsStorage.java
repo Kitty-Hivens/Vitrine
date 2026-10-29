@@ -6,6 +6,8 @@ import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
 import java.io.IOException;
 
 public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
+    private static final SodiumGameOptions DEFAULTS = new SodiumGameOptions();
+
     private final SodiumGameOptions options;
 
     public SodiumOptionsStorage() {
@@ -15,6 +17,11 @@ public class SodiumOptionsStorage implements OptionStorage<SodiumGameOptions> {
     @Override
     public SodiumGameOptions getData() {
         return this.options;
+    }
+
+    @Override
+    public SodiumGameOptions getDefaults() {
+        return DEFAULTS;
     }
 
     @Override

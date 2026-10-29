@@ -27,6 +27,8 @@ public class OptionImpl<S, T> implements Option<T> {
 
     private final OptionImpact impact;
 
+    private final T defaultValue;
+
     private T value;
     private T modifiedValue;
 
@@ -39,6 +41,7 @@ public class OptionImpl<S, T> implements Option<T> {
                        Function<OptionImpl<S, T>, Control<T>> control,
                        EnumSet<OptionFlag> flags,
                        OptionImpact impact,
+                       T defaultValue,
                        boolean enabled) {
         this.storage = storage;
         this.name = name;
@@ -46,6 +49,7 @@ public class OptionImpl<S, T> implements Option<T> {
         this.binding = binding;
         this.impact = impact;
         this.flags = flags;
+        this.defaultValue = defaultValue;
         this.control = control.apply(this);
         this.enabled = enabled;
 
@@ -65,6 +69,18 @@ public class OptionImpl<S, T> implements Option<T> {
     @Override
     public ITextComponent getTooltip() {
         return this.tooltip;
+    }
+
+    @Override
+    public boolean isAtDefault() {
+        return this.defaultValue == null || this.defaultValue.equals(this.modifiedValue);
+    }
+
+    @Override
+    public void resetToDefault() {
+        if (this.defaultValue != null) {
+            this.modifiedValue = this.defaultValue;
+        }
     }
 
     @Override
@@ -131,6 +147,7 @@ public class OptionImpl<S, T> implements Option<T> {
         private Function<OptionImpl<S, T>, Control<T>> control;
         private OptionImpact impact;
         private final EnumSet<OptionFlag> flags = EnumSet.noneOf(OptionFlag.class);
+        private T defaultValue;
         private boolean enabled = true;
 
         private Builder(OptionStorage<S> storage) {
@@ -193,6 +210,15 @@ public class OptionImpl<S, T> implements Option<T> {
             return this;
         }
 
+        /**
+         * Only needed for storages that cannot provide their own defaults, see {@link OptionStorage#getDefaults()}.
+         */
+        public Builder<S, T> setDefault(T value) {
+            this.defaultValue = value;
+
+            return this;
+        }
+
         public Builder<S, T> setEnabled(boolean value) {
             this.enabled = value;
 
@@ -211,7 +237,14 @@ public class OptionImpl<S, T> implements Option<T> {
             Validate.notNull(this.binding, "Option binding must be specified");
             Validate.notNull(this.control, "Control must be specified");
 
-            return new OptionImpl<>(this.storage, this.name, this.tooltip, this.binding, this.control, this.flags, this.impact, this.enabled);
+            T defaultValue = this.defaultValue;
+            S defaults = this.storage.getDefaults();
+
+            if (defaultValue == null && defaults != null) {
+                defaultValue = this.binding.getValue(defaults);
+            }
+
+            return new OptionImpl<>(this.storage, this.name, this.tooltip, this.binding, this.control, this.flags, this.impact, defaultValue, this.enabled);
         }
     }
 }
