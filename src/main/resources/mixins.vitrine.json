@@ -47,6 +47,8 @@
 		"features.options.MixinOptionsScreen",
 		"features.options.MixinWorldRenderer",
 		"features.particle.cull.MixinParticleManager",
+		"features.particle.filter.MixinEntityRenderer",
+		"features.particle.filter.MixinParticleManager",
 		"features.render_layer.leaves.MixinLeavesBlock",
 		"features.sky.MixinWorldRenderer",
 		"features.texture_tracking.AccessorParticle",

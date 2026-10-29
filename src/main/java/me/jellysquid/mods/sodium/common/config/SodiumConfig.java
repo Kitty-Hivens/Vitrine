@@ -54,6 +54,7 @@ public class SodiumConfig {
         this.addMixinRule("features.options", true);
         this.addMixinRule("features.particle", true);
         this.addMixinRule("features.particle.cull", true);
+        this.addMixinRule("features.particle.filter", true);
         this.addMixinRule("features.particle.fast_render", true);
         this.addMixinRule("features.render_layer", true);
         this.addMixinRule("features.render_layer.leaves", true);
