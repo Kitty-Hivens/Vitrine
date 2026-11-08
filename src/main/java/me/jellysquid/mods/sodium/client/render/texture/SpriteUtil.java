@@ -2,35 +2,65 @@ package me.jellysquid.mods.sodium.client.render.texture;
 
 import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptions;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildThread;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
 public class SpriteUtil {
     private static int frame;
+
+    private static int frameAtLastTick;
+
+    // Sprites last used in this frame or later animate on the current tick.
+    private static int activeSince;
 
     public static void onFrameStart() {
         frame++;
     }
 
     /**
-     * Marks a sprite drawn by a tracked render path. From then on the sprite only animates while something draws it.
+     * Opens an animation tick of the blocks atlas. At high frame rates several frames pass between two ticks and a
+     * sprite used in any of them counts. At low frame rates several ticks share one frame, and the frame before it
+     * still counts, so a sprite that misses a single frame, such as a particle at the edge of the view, keeps going.
+     */
+    public static void onAnimationTick() {
+        int previousFrame = frame - 1;
+
+        activeSince = previousFrame - frameAtLastTick > 0 ? frameAtLastTick : previousFrame;
+        frameAtLastTick = frame;
+    }
+
+    /**
+     * Marks a sprite drawn in the current frame. On a chunk build worker that is collecting sprites, the sprite is also
+     * added to the chunk being built.
      */
     public static void markSpriteActive(TextureAtlasSprite sprite) {
-        if (sprite != null) {
-            ((SpriteExtended) sprite).vitrine$markActive(frame, true);
+        if (sprite == null) {
+            return;
+        }
+
+        ((SpriteExtended) sprite).vitrine$markActive(frame);
+
+        Thread thread = Thread.currentThread();
+
+        if (thread instanceof ChunkBuildThread) {
+            ((ChunkBuildThread) thread).collectSprite(sprite);
         }
     }
 
     /**
-     * Marks a sprite looked up by name. Whoever looked it up may draw it outside the tracked render paths, so this
-     * keeps the sprite animating without opting it into on-demand animation.
+     * Marks a sprite looked up by name. Chunk build workers look up sprites they may never draw, so a lookup is not
+     * collected into the chunk.
      */
     public static void markSpriteRequested(TextureAtlasSprite sprite) {
         if (sprite != null) {
-            ((SpriteExtended) sprite).vitrine$markActive(frame, false);
+            ((SpriteExtended) sprite).vitrine$markActive(frame);
         }
     }
 
-    public static boolean shouldAnimate(TextureAtlasSprite sprite) {
+    /**
+     * @param onlyVisible True for an atlas whose sprites animate only while used
+     */
+    public static boolean shouldAnimate(TextureAtlasSprite sprite, boolean onlyVisible) {
         SodiumGameOptions options = Vitrine.options();
         SpriteExtended extended = (SpriteExtended) sprite;
 
@@ -38,14 +68,10 @@ public class SpriteUtil {
             return false;
         }
 
-        // A sprite no tracked path has drawn may be drawn by something we cannot see, such as a custom renderer
-        // holding on to the sprite, so it keeps animating unconditionally.
-        if (!options.advanced.animateOnlyVisibleTextures || !extended.vitrine$isTracked()) {
+        if (!onlyVisible || !options.advanced.animateOnlyVisibleTextures) {
             return true;
         }
 
-        // Ticks run between frames, so a sprite drawn in the latest frame differs by zero. One frame of slack keeps
-        // a sprite that misses a single frame, such as a particle at the edge of the view, from stalling.
-        return frame - extended.vitrine$getLastActiveFrame() <= 1;
+        return extended.vitrine$getLastActiveFrame() - activeSince >= 0;
     }
 }

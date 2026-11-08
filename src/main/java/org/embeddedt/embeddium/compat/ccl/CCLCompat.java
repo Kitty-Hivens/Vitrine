@@ -2,6 +2,7 @@ package org.embeddedt.embeddium.compat.ccl;
 
 import codechicken.lib.render.block.BlockRenderingRegistry;
 import me.jellysquid.mods.sodium.client.model.quad.properties.ModelQuadFacing;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildThread;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.buffers.ChunkModelBuffers;
 import me.jellysquid.mods.sodium.client.render.chunk.format.ModelVertexSink;
 import net.minecraft.block.state.IBlockState;
@@ -68,6 +69,9 @@ public class CCLCompat {
 
         builder.setTranslation(-pos.getX(), -pos.getY(), -pos.getZ());
 
+        // The vertices come back without their sprites, so the sprites are collected while CCL renders.
+        ChunkBuildThread.beginCollectingSprites(buffers.getRenderData());
+
         try {
             // flag is needed for the methodhandle to work
             //noinspection unused
@@ -79,6 +83,7 @@ public class CCLCompat {
                 throw new RuntimeException(e);
             }
         } finally {
+            ChunkBuildThread.endCollectingSprites();
             builder.finishDrawing();
         }
 

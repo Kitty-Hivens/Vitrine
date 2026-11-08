@@ -94,7 +94,7 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
 
             WorkerRunnable worker = new WorkerRunnable(buffers, pipeline);
 
-            Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
+            Thread thread = new ChunkBuildThread(worker, "Chunk Render Task Executor #" + i);
             thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
             thread.start();
 

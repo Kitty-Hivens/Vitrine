@@ -152,7 +152,7 @@ public class BlockRenderer {
             sink.writeQuad(x, y, z, color, u, v, lm);
         }
 
-        TextureAtlasSprite sprite = src.rubidium$getSprite();
+        TextureAtlasSprite sprite = bakedQuad.getSprite();
 
         if (sprite != null) {
             renderData.addSprite(sprite);

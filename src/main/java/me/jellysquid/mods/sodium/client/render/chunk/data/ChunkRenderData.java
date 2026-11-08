@@ -144,8 +144,7 @@ public class ChunkRenderData {
         }
 
         /**
-         * Adds a sprite to this data container for tracking. If the sprite is tickable, it will be ticked every frame
-         * before rendering as necessary.
+         * Records a sprite the chunk draws. Animated sprites are marked as used every frame the chunk is visible.
          * @param sprite The sprite
          */
         public void addSprite(TextureAtlasSprite sprite) {

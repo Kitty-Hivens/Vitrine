@@ -193,8 +193,9 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
     }
 
     /**
-     * Ensures that all resources attached to the given chunk render are "ticked" forward. This should be called every
-     * time before this render is drawn if {@link ChunkRenderContainer#isTickable()} is true.
+     * Marks the animated sprites of this render as used in the current frame, so they keep animating while it is
+     * drawn. This should be called every frame this render is visible if {@link ChunkRenderContainer#isTickable()} is
+     * true.
      */
     public void tick() {
         for (TextureAtlasSprite sprite : this.data.getAnimatedSprites()) {
