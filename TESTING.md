@@ -8,13 +8,13 @@ Run each configuration in a real modpack, not a vanilla instance -- most of the 
 
 Every Vitrine option is under Video Settings -> the Vitrine options button. Options marked "renderer reload" re-mesh the world when changed, no restart needed; the rest apply live.
 
-| Axis | Option (group) | Values | Effect on code path |
-|---|---|---|---|
-| Chunk backend | Use Chunk Multidraw (Advanced) | on / off | On = multidraw backend; off = oneshot backend. Also forced to oneshot when the driver lacks the feature or is blacklisted. |
-| Vertex format | Use Compact Vertex Format (Advanced) | on / off | On = HFP (16-bit) writer/shader; off = SFP (32-bit float). |
-| Translucency sort | Translucency Sorting (Advanced) | on / off | Enables the async translucency-sort task path. |
-| Vertex writer | Allow Direct Memory Access (Advanced) | on / off | On = Unsafe writers; off = Nio writers. Must produce identical geometry. |
-| Command-buffer branch | (hardware, not an option) | Intel-class / discrete | The multidraw backend has a separate `commandBuffer == null` path taken on drivers without persistent-mapped indirect buffers (Intel/mesa). |
+| Axis                  | Option (group)                        | Values                 | Effect on code path                                                                                                                         |
+|-----------------------|---------------------------------------|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| Chunk backend         | Use Chunk Multidraw (Advanced)        | on / off               | On = multidraw backend; off = oneshot backend. Also forced to oneshot when the driver lacks the feature or is blacklisted.                  |
+| Vertex format         | Use Compact Vertex Format (Advanced)  | on / off               | On = HFP (16-bit) writer/shader; off = SFP (32-bit float).                                                                                  |
+| Translucency sort     | Translucency Sorting (Advanced)       | on / off               | Enables the async translucency-sort task path.                                                                                              |
+| Vertex writer         | Allow Direct Memory Access (Advanced) | on / off               | On = Unsafe writers; off = Nio writers. Must produce identical geometry.                                                                    |
+| Command-buffer branch | (hardware, not an option)             | Intel-class / discrete | The multidraw backend has a separate `commandBuffer == null` path taken on drivers without persistent-mapped indirect buffers (Intel/mesa). |
 
 Notes:
 - Multidraw needs OpenGL 3.0+ VAOs and 4.3 (or ARB) multi-draw-indirect. If the toggle is greyed out or the game logs a fallback, this machine only runs the oneshot backend -- record that.
@@ -24,14 +24,14 @@ Notes:
 
 Full 2^4 is 16 combinations plus the hardware axis; that is more than the payoff. Run the baseline, then flip one axis at a time, then the opposite corner. If a single-axis flip regresses, bisect from there.
 
-| # | Multidraw | Compact (HFP) | Translucency sort | Direct memory | Purpose |
-|---|---|---|---|---|---|
-| 1 | on | on | on | on | Baseline (default settings) |
-| 2 | off | on | on | on | Oneshot backend |
-| 3 | on | off | on | on | SFP vertex format |
-| 4 | on | on | off | on | No translucency sort |
-| 5 | on | on | on | off | Nio writers (DMA off) |
-| 6 | off | off | off | off | Opposite corner |
+| #   | Multidraw | Compact (HFP) | Translucency sort | Direct memory | Purpose                     |
+|-----|-----------|---------------|-------------------|---------------|-----------------------------|
+| 1   | on        | on            | on                | on            | Baseline (default settings) |
+| 2   | off       | on            | on                | on            | Oneshot backend             |
+| 3   | on        | off           | on                | on            | SFP vertex format           |
+| 4   | on        | on            | off               | on            | No translucency sort        |
+| 5   | on        | on            | on                | off           | Nio writers (DMA off)       |
+| 6   | off       | off           | off               | off           | Opposite corner             |
 
 Per hardware: run at least the baseline on both an Intel iGPU (command-buffer-null branch) and, if available, a discrete GPU.
 
@@ -65,6 +65,22 @@ These target specific fixes; run them at least once on the baseline configuratio
 - [ ] **Rapid translucent edits.** Place and break stained glass repeatedly while looking at it; no stale/flickering translucency (the sort-vs-rebuild race).
 - [ ] **Entity smooth lighting** follows the Smooth Lighting option (entities darken/smooth with the setting, not with the vanilla AO slider).
 - [ ] **CTM / connected-textures mod present.** With a connected-textures mod installed, fly around near chunk borders; no `ArrayIndexOutOfBounds` from biome lookups on the chunk-build workers.
+
+## Animate Only Visible Textures
+
+Run with the option on (the default). Count texture uploads with a GL proxy library loaded through `-Dorg.lwjgl.opengl.libname`. In a fresh world, `glTexSubImage2D` calls per tick should stay close to the number of animated sprites actually in view, not the number of animated sprites in the pack.
+
+- [ ] Water, lava, fire and a nether portal next to the player animate. Standing inside the portal, the purple screen overlay animates.
+- [ ] A burning mob shows animated fire, and so does the first-person view while burning.
+- [ ] Animated items animate in the hand, in the hotbar, in the inventory and in JEI's ingredient list.
+- [ ] Particles of an animated block (breaking magma or a sea lantern) animate.
+- [ ] Animated blocks from mods animate when in view.
+- [ ] Botania: the Alfheim portal swirl (in the world, in JEI and in the lexicon), mana pool water with Botania shaders off, and mana sparks with no spark item drawn anywhere else.
+- [ ] Astral Sorcery: the Lightwell fluid surface and the Containment Chalice fluid with no liquid starlight elsewhere in view.
+- [ ] Thaumic Tinkerer: the Transvector mark outline pulses.
+- [ ] Thermal blocks rendered through CodeChickenLib (ducts with fluid or flux inside) animate.
+- [ ] A camo or facade block showing an animated texture animates while the source block is out of view.
+- [ ] Turning the option off brings back every animation, including any that a mod's own renderer draws.
 
 ## Recording results
 
