@@ -14,6 +14,7 @@ import me.jellysquid.mods.sodium.client.gl.device.CommandList;
 import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.backends.multidraw.MultidrawChunkRenderBackend;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildFailure;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuilder;
 import me.jellysquid.mods.sodium.client.render.chunk.cull.ChunkCuller;
@@ -35,6 +36,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ReportedException;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -63,6 +65,13 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
      * but this value works fine in testing.
      */
     private static final float FOG_PLANE_OFFSET = 12.0f;
+
+    /**
+     * How many rebuilds of one section may fail in a row before the failure is treated as fatal. A mod whose model
+     * cache is not safe for several builder threads fails at random and succeeds on the next try; one that throws
+     * for the same block every time fails every time, and should crash with its report rather than be hidden.
+     */
+    private static final int MAX_FAILED_REBUILDS = 3;
 
     private final ChunkBuilder<T> builder;
     private final ChunkRenderBackend<T> backend;
@@ -524,12 +533,62 @@ public class ChunkRenderManager<T extends ChunkGraphicsState> implements ChunkSt
         this.dirty |= this.builder.performPendingUploads();
 
         // See if there are failed builds
-        this.builder.handleFailures();
+        this.builder.handleFailures(this::recoverFailedBuild);
 
         if (!futures.isEmpty()) {
             this.dirty = true;
-            this.backend.upload(RenderDevice.INSTANCE.createCommandList(), this.builder.filterChunkBuilds(new FutureDequeDrain<>(futures)));
+            this.backend.upload(RenderDevice.INSTANCE.createCommandList(),
+                    this.builder.filterChunkBuilds(new FutureDequeDrain<>(futures, this::recoverFailedBuild)));
         }
+    }
+
+    /**
+     * Schedules a section whose rebuild threw to be built again, instead of crashing. Multithreaded chunk building
+     * (vanilla's included) runs mod models on several threads at once, and a model that caches into an unsynchronized
+     * map fails when two threads meet in it: the section is fine, only that attempt was not.
+     *
+     * @return True if the failure was handled; false if it is not a chunk rebuild failure at all
+     * @throws ReportedException the build's own crash report, once the same section has failed too many times in a row
+     */
+    private boolean recoverFailedBuild(Throwable failure) {
+        if (!(failure instanceof ChunkBuildFailure)) {
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        ChunkRenderContainer<T> render = (ChunkRenderContainer<T>) ((ChunkBuildFailure) failure).getRender();
+        Throwable cause = failure.getCause();
+
+        // The section was unloaded while it was being built: there is nothing left to rebuild or to crash over
+        if (this.renders.get(render.getId()) != render) {
+            return true;
+        }
+
+        int failed = render.recordFailedRebuild();
+
+        if (failed > MAX_FAILED_REBUILDS) {
+            if (cause instanceof ReportedException) {
+                throw (ReportedException) cause;
+            }
+            throw new RuntimeException("Chunk build failed", cause);
+        }
+
+        Throwable reason = cause instanceof ReportedException ? cause.getCause() : cause;
+        if (failed == 1) {
+            Vitrine.logger().warn("Rebuilding {} after its build threw; a mod's model is likely not safe for several builder threads",
+                    render, reason);
+        } else {
+            Vitrine.logger().warn("Rebuilding {} again after its build threw ({} of {} attempts): {}",
+                    render, failed, MAX_FAILED_REBUILDS, String.valueOf(reason));
+        }
+
+        if (render.scheduleRebuild(false) && render.canRebuild()) {
+            this.rebuildQueue.enqueue(render);
+        }
+
+        this.dirty = true;
+
+        return true;
     }
 
     public void markDirty() {

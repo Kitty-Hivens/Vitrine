@@ -41,6 +41,9 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
     private boolean rebuildableForTranslucents;
 
+    // Rebuilds that threw in a row. Reset by any mesh arriving, so only a section that keeps failing reaches the limit.
+    private int failedRebuilds;
+
     public ChunkRenderContainer(ChunkRenderBackend<T> backend, SodiumWorldRenderer worldRenderer, int chunkX, int chunkY, int chunkZ, ChunkRenderColumn<T> column) {
         this.worldRenderer = worldRenderer;
 
@@ -135,6 +138,7 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
 
         this.worldRenderer.onChunkRenderUpdated(this.chunkX, this.chunkY, this.chunkZ, this.data, info);
         this.data = info;
+        this.failedRebuilds = 0;
 
         this.tickable = !info.getAnimatedSprites().isEmpty();
     }
@@ -153,6 +157,14 @@ public class ChunkRenderContainer<T extends ChunkGraphicsState> {
         this.rebuildGeneration++;
 
         return changed;
+    }
+
+    /**
+     * Records a rebuild of this render that threw.
+     * @return How many rebuilds in a row have now failed, this one included
+     */
+    public int recordFailedRebuild() {
+        return ++this.failedRebuilds;
     }
 
     public boolean scheduleSort(boolean important) {
