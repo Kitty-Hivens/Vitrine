@@ -5,13 +5,25 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Predicate;
 
 public class FutureDequeDrain<T> implements Iterator<T> {
     private final Deque<CompletableFuture<T>> deque;
+    private final Predicate<Throwable> recover;
     private T next = null;
 
     public FutureDequeDrain(Deque<CompletableFuture<T>> deque) {
+        this(deque, failure -> false);
+    }
+
+    /**
+     * @param recover Offered the cause of every future that completed exceptionally. Returning true skips that
+     *                future as if it had been cancelled; returning false rethrows.
+     */
+    public FutureDequeDrain(Deque<CompletableFuture<T>> deque, Predicate<Throwable> recover) {
         this.deque = deque;
+        this.recover = recover;
     }
 
     @Override
@@ -34,6 +46,10 @@ public class FutureDequeDrain<T> implements Iterator<T> {
                 return;
             } catch (CancellationException e) {
                 // no-op
+            } catch (CompletionException e) {
+                if (!this.recover.test(e.getCause())) {
+                    throw e;
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ import dev.hivens.vitrine.Vitrine;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkGraphicsState;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderContainer;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildBuffers;
+import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildFailure;
 import me.jellysquid.mods.sodium.client.render.chunk.compile.ChunkBuildResult;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkMeshData;
 import me.jellysquid.mods.sodium.client.render.chunk.data.ChunkRenderBounds;
@@ -163,11 +164,12 @@ public class ChunkRenderRebuildTask<T extends ChunkGraphicsState> extends ChunkR
                 }
             }
         } catch (ReportedException ex) {
-            // Propagate existing crashes (add context)
-            throw fillCrashInfo(ex.getCrashReport(), slice, pos);
+            // Propagate existing crashes (add context), naming the section so the main thread can rebuild it
+            throw new ChunkBuildFailure(this.render, fillCrashInfo(ex.getCrashReport(), slice, pos));
         } catch (Throwable ex) {
             // Create a new crash report for other exceptions (e.g. thrown in getQuads)
-            throw fillCrashInfo(CrashReport.makeCrashReport(ex, "Encountered exception while building chunk meshes"), slice, pos);
+            throw new ChunkBuildFailure(this.render,
+                    fillCrashInfo(CrashReport.makeCrashReport(ex, "Encountered exception while building chunk meshes"), slice, pos));
         } finally {
             // Must be reset on cancellation and crash paths too: the render layer is a thread-local,
             // and a stale value would leak into the next task executed on this worker thread.

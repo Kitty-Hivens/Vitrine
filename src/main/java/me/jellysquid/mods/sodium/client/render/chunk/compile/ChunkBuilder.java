@@ -29,8 +29,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 public class ChunkBuilder<T extends ChunkGraphicsState> {
     /**
@@ -196,12 +198,27 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
         return true;
     }
 
-    public void handleFailures() {
+    /**
+     * Drains the failed builds. Each is offered to {@code recover} first; the first one it declines is thrown.
+     */
+    public void handleFailures(Predicate<Throwable> recover) {
         Iterator<Throwable> errorIterator = new DequeDrain<>(this.failureQueue);
 
-        if (errorIterator.hasNext()) {
-            // If there is any exception from the build failure queue, throw it
+        while (errorIterator.hasNext()) {
             Throwable ex = errorIterator.next();
+
+            if (ex instanceof CompletionException && ex.getCause() != null) {
+                ex = ex.getCause();
+            }
+
+            if (recover.test(ex)) {
+                continue;
+            }
+
+            // A section that kept failing crashes with the report its build filled in
+            if (ex instanceof ChunkBuildFailure && ex.getCause() != null) {
+                ex = ex.getCause();
+            }
 
             if (ex instanceof ReportedException) {
                 // Propagate CrashExceptions directly to provide extra information
@@ -401,9 +418,12 @@ public class ChunkBuilder<T extends ChunkGraphicsState> {
                     // Perform the build task with this worker's local resources and obtain the result
                     result = job.task.performBuild(this.cache, this.bufferCache, job);
                 } catch (Throwable e) {
-                    // Propagate any exception from chunk building
+                    // Propagate any exception from chunk building. A failure that names its section is logged by
+                    // the main thread, which decides whether it is retried or fatal.
                     job.future.completeExceptionally(e);
-                    Vitrine.logger().error("Chunk build failed", e);
+                    if (!(e instanceof ChunkBuildFailure)) {
+                        Vitrine.logger().error("Chunk build failed", e);
+                    }
                     continue;
                 } finally {
                     job.task.releaseResources();
